@@ -682,10 +682,10 @@
         recordingIndicator.hidden = true;
         startRecordingButton.hidden = false;
         stopRecordingButton.hidden = true;
-        document.getElementById("gameStatus").textContent = "READY";
+        document.getElementById("gameStatus").textContent = "ひとやすみ";
         document.getElementById("overlayTitle").textContent = "録音を終了しました";
         document.getElementById("overlayCopy").textContent = "譜面を確認して、保存またはもう一度録音してください。";
-        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("startButton").textContent = "曲を弾く";
         overlay.classList.remove("hidden");
         selectionControls.forEach((control) => { control.disabled = false; });
         resizeCanvas();
@@ -1271,7 +1271,7 @@
           if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(config.url) || !/^sb_publishable_/.test(config.publishableKey)) return;
           communityConfig = { url: config.url.replace(/\/$/, ""), publishableKey: config.publishableKey };
           app.classList.add("community-enabled");
-          if (document.querySelector('link[href="public.css"]')) creatorDetails.querySelector("summary").textContent = "曲を作る・投稿する";
+          if (document.querySelector('link[href="public.css"]')) creatorDetails.querySelector("summary").textContent = "曲づくりのアトリエ";
           document.getElementById("publishSongButton").disabled = false;
           await loadCommunitySongs(true);
         } catch (error) {
@@ -1319,7 +1319,7 @@
                 songSelect.value = id;
                 songSelect.dispatchEvent(new Event("change"));
                 document.getElementById("startButton").focus();
-                status.textContent = `「${parsed.name}」を選びました。「演奏をはじめる」で遊べます。`;
+                status.textContent = `「${parsed.name}」を選びました。「曲を弾く」で遊べます。`;
               });
               list.append(button);
               added++;
@@ -1561,7 +1561,7 @@
         try {
           localStorage.setItem(freeTuningStorageKey, JSON.stringify(freeTuning));
         } catch (error) {
-          console.warn("フリー演奏の調設定を保存できませんでした。", error);
+          console.warn("フリー演奏の音づくり設定を保存できませんでした。", error);
         }
       }
 
@@ -2147,7 +2147,7 @@
         document.getElementById("freeTuningPanel").open = false;
         selectionControls.forEach((control) => { control.disabled = true; });
         keyButtons.forEach((button) => button.classList.remove("next"));
-        document.getElementById("gameStatus").textContent = "FREE PLAY";
+        document.getElementById("gameStatus").textContent = "フリー演奏";
         document.getElementById("freePlayNote").textContent = "♪";
         app.classList.add("is-playing", "is-free-play");
         overlay.classList.add("hidden");
@@ -2165,7 +2165,7 @@
           state = "playing";
           app.classList.add("is-playing");
           resizeCanvas();
-          document.getElementById("gameStatus").textContent = isTestPlay ? "TEST PLAY" : practiceMode ? "PRACTICE" : "PLAYING";
+          document.getElementById("gameStatus").textContent = isTestPlay ? "おためし演奏" : practiceMode ? "ゆっくり練習" : "演奏中";
           overlay.classList.add("hidden");
           return;
         }
@@ -2189,10 +2189,10 @@
         app.classList.add("is-playing");
         updateKeyLabels();
         resizeCanvas();
-        document.getElementById("gameStatus").textContent = practiceMode ? "PRACTICE" : "PLAYING";
-        document.getElementById("overlayTitle").textContent = "準備はいい？";
-        document.getElementById("overlayCopy").innerHTML = "画面の音階キーをタップして演奏。<br>ノーツが判定ラインに重なる瞬間がチャンス。";
-        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("gameStatus").textContent = practiceMode ? "ゆっくり練習" : "演奏中";
+        document.getElementById("overlayTitle").textContent = "今日は、どんな音にする？";
+        document.getElementById("overlayCopy").innerHTML = "曲に合わせて、光る鍵盤をぽろん。<br>自由に弾きたいときは「フリー演奏」へ。";
+        document.getElementById("startButton").textContent = "曲を弾く";
         overlay.classList.add("hidden");
         setNextNote();
       }
@@ -2227,10 +2227,10 @@
         updateKeyLabels();
         resizeCanvas();
         document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / runTempoScale)}`;
-        document.getElementById("gameStatus").textContent = "TEST PLAY";
+        document.getElementById("gameStatus").textContent = "おためし演奏";
         document.getElementById("overlayTitle").textContent = "譜面をテスト中";
         document.getElementById("overlayCopy").textContent = "編集中の譜面を再生しています。";
-        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("startButton").textContent = "曲を弾く";
         overlay.classList.add("hidden");
         setNextNote();
         showCreatorStatus(`「${testChart.name}」をテストプレイ中です。`);
@@ -2250,15 +2250,15 @@
         selectionControls.forEach((control) => { control.disabled = false; });
         clearPointerInteraction();
         app.classList.remove("is-playing");
-        document.getElementById("gameStatus").textContent = "READY";
+        document.getElementById("gameStatus").textContent = "ひとやすみ";
         document.getElementById("overlayTitle").textContent = "テストプレイ終了";
         document.getElementById("overlayCopy").textContent = "譜面を編集して、もう一度テストできます。";
-        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("startButton").textContent = "曲を弾く";
         document.getElementById("stopButton").hidden = true;
         document.getElementById("progressFill").style.width = "0%";
         document.getElementById("nextOrb").textContent = "—";
-        document.getElementById("nextNote").textContent = "曲を選んでスタート";
-        document.getElementById("nextHint").textContent = "キーを押すタイミングを確認";
+        document.getElementById("nextNote").textContent = "好きな曲を選んでね";
+        document.getElementById("nextHint").textContent = "演奏中は、次の音をお知らせ";
         keyButtons.forEach((button) => button.classList.remove("next"));
         overlay.classList.remove("hidden");
         resizeCanvas();
@@ -2273,7 +2273,7 @@
         state = "paused";
         app.classList.remove("is-playing");
         resizeCanvas();
-        document.getElementById("gameStatus").textContent = "PAUSED";
+        document.getElementById("gameStatus").textContent = "ひと休み中";
         document.getElementById("overlayTitle").textContent = "一時停止中";
         document.getElementById("overlayCopy").textContent = isTestPlay
           ? "編集画面に戻るときは、テストを終了してください。"
@@ -2303,15 +2303,15 @@
         app.classList.remove("is-playing", "is-free-play");
         updateKeyLabels();
         document.getElementById("freePlayButton").hidden = false;
-        document.getElementById("gameStatus").textContent = "READY";
-        document.getElementById("overlayTitle").textContent = "準備はいい？";
-        document.getElementById("overlayCopy").innerHTML = "画面の音階キーをタップして演奏。<br>ノーツが判定ラインに重なる瞬間がチャンス。";
-        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("gameStatus").textContent = "ひとやすみ";
+        document.getElementById("overlayTitle").textContent = "今日は、どんな音にする？";
+        document.getElementById("overlayCopy").innerHTML = "曲に合わせて、光る鍵盤をぽろん。<br>自由に弾きたいときは「フリー演奏」へ。";
+        document.getElementById("startButton").textContent = "曲を弾く";
         document.getElementById("stopButton").hidden = true;
         document.getElementById("progressFill").style.width = "0%";
         document.getElementById("nextOrb").textContent = "—";
-        document.getElementById("nextNote").textContent = "曲を選んでスタート";
-        document.getElementById("nextHint").textContent = "キーを押すタイミングを確認";
+        document.getElementById("nextNote").textContent = "好きな曲を選んでね";
+        document.getElementById("nextHint").textContent = "演奏中は、次の音をお知らせ";
         keyButtons.forEach((button) => button.classList.remove("next"));
         overlay.classList.remove("hidden");
         resizeCanvas();
@@ -2330,9 +2330,9 @@
         selectionControls.forEach((control) => { control.disabled = false; });
         app.classList.remove("is-playing");
         resizeCanvas();
-        document.getElementById("gameStatus").textContent = "FINISHED";
+        document.getElementById("gameStatus").textContent = "演奏のおわり";
         document.getElementById("overlayTitle").textContent = "演奏おつかれさま！";
-        document.getElementById("overlayCopy").innerHTML = `スコア ${score.toLocaleString()} pt · ベストコンボ ${bestCombo}<br>もう一度弾いて、運指を身につけよう。`;
+        document.getElementById("overlayCopy").innerHTML = `スコア ${score.toLocaleString()} pt · ベストコンボ ${bestCombo}<br>いい音が、またひとつ。もう一曲いかが？`;
         document.getElementById("startButton").textContent = "もう一度演奏する";
         overlay.classList.remove("hidden");
         keyButtons.forEach((button) => button.classList.remove("next"));
