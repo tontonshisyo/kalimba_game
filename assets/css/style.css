@@ -1,12 +1,12 @@
     :root {
       color-scheme: light;
-      --bg: #f1e8d8;
+      --bg: #f7f3ea;
       --panel: #fbf6eb;
       --panel-2: #efe4d1;
       --line: rgba(105,75,48,.18);
       --muted: #796957;
       --text: #35271d;
-      --mint: #a65d30;
+      --mint: #536d59;
       --gold: #a66a2d;
       --pink: #ad4e3e;
       --blue: #607d86;
@@ -433,6 +433,119 @@
       .note-orb { width: 30px; height: 30px; flex-basis: 30px; font-size: 10px; }
       .next-note-info strong { font-size: 11px; }
       .next-note-info span { font-size: 9px; margin-top: 1px; }
+    }
+    /* A quiet, tactile home for the instrument. Playing geometry stays unchanged. */
+    :root {
+      --panel: #fffdf7;
+      --panel-2: #eee8dc;
+      --line: #dfd9cc;
+      --text: #41483c;
+      --muted: #737665;
+      --gold: #97704e;
+      --sans: "Hiragino Maru Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    }
+    body { background: radial-gradient(ellipse at 8% 0%, #e7ecdf 0, transparent 45%), radial-gradient(ellipse at 95% 35%, #f5e4d8 0, transparent 45%), var(--bg); }
+    .app:not(.is-playing) { max-width: 1240px; padding-top: 30px; }
+    header { padding-bottom: 22px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+    .brand-mark { width: 44px; height: 44px; border-radius: 16px; background: #70866b; box-shadow: inset 0 1px 1px #ffffff80; }
+    .brand-name { font-family: var(--sans); font-size: 24px; letter-spacing: .13em; }
+    .brand-caption { font-size: 10px; letter-spacing: .12em; }
+    .live-indicator { padding: 8px 12px; border-radius: 24px; background: #e8ecdf; font-size: 11px; }
+    .live-dot { background: #718466; }
+    .layout { grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; }
+    .section-top { flex-wrap: wrap; align-items: start; gap: 22px; margin-bottom: 20px; }
+    .section-top > div:first-child { flex-basis: 100%; }
+    .eyebrow { color: #7d8c70; font-size: 10px; letter-spacing: .2em; margin-bottom: 12px; }
+    h1 { font-family: var(--sans); font-size: clamp(28px, 3.5vw, 40px); font-weight: 700; letter-spacing: .05em; }
+    .subheading { font-size: 13px; line-height: 1.9; margin-top: 10px; }
+    .selection-controls { width: 100%; justify-content: space-between; gap: 12px; }
+    .song-select { max-width: 55%; min-height: 44px; border-radius: 14px; background-color: var(--panel); font-size: 12px; }
+    .practice-mode { font-size: 12px; }
+    .practice-mode small { font-size: 10px; color: var(--muted); }
+    input[type="checkbox"], input[type="range"] { accent-color: #637c60; }
+    .app:not(.is-playing) .game-card { margin-bottom: 24px; }
+    .app:not(.is-playing) .playfield { min-height: 360px; border: 1px solid #e4ddcc; border-radius: 28px; background: radial-gradient(ellipse at 50% 25%, #fffdf4, #f0eadc); box-shadow: 0 8px 24px #70644b08; }
+    .app:not(.is-playing) .overlay { min-height: 360px; }
+    .app:not(.is-playing) .start-box { padding: 28px 16px; width: 100%; }
+    .start-box h2 { font-family: var(--sans); font-size: 21px; font-weight: 700; color: var(--text); }
+    .start-box p { font-size: 12px; line-height: 1.9; }
+    .app:not(.is-playing) .start-box p { color: var(--muted); }
+    .app:not(.is-playing) .start-icon { width: 150px; height: 125px; margin: 0 auto 12px; background: transparent; border: 0; box-shadow: none; border-radius: 0; }
+    .start-icon svg { width: 100%; height: 100%; }
+    .primary-button, .stop-button { min-height: 46px; padding: 12px 24px; border-radius: 24px; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+    .primary-button { color: #fffdf5; background: #637c60; border: 1px solid #637c60; box-shadow: 0 3px 0 #4c6349; }
+    .primary-button:hover { background: #536d50; }
+    .stop-button, .app:not(.is-playing) .stop-button { background: #fffdf5; color: #52634c; border: 1px solid #cdd4c2; box-shadow: 0 2px 0 #e3e4d9; }
+    .overlay-actions { gap: 12px; flex-wrap: wrap; }
+    .game-settings, .free-tuning, .beta-feedback, .creator-mode, .community-panel { margin: 0 0 14px; padding: 17px 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); font-size: 13px; }
+    .game-settings summary, .free-tuning summary, .beta-feedback summary, .creator-mode summary { font-size: 13px; line-height: 1.7; font-weight: 700; cursor: pointer; }
+    summary::marker { color: #829476; font-size: 11px; }
+    .community-panel h2 { font-size: 16px; color: var(--text); }
+    .community-panel p, .beta-feedback p, .creator-help, .chart-help, .sheet-note { font-size: 12px; line-height: 1.9; color: var(--muted); }
+    .creator-button { min-height: 40px; padding: 9px 14px; border-radius: 12px; font-size: 12px; background: #f1f0e6; color: #4f6248; border-color: #d7ddcd; }
+    .creator-button-primary { background: #637c60; color: #fffdf5; border-color: #637c60; }
+    .creator-button-danger { background: #faece5; color: #9b5044; border-color: #e8c7bd; }
+    button:disabled { opacity: .48; cursor: default; }
+    button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid #a3b496; outline-offset: 3px; }
+    .creator-fields input, .creator-fields select, .beta-feedback textarea, .beta-feedback select, #creatorChart { border-radius: 10px; background: #fffef9; color: var(--text); font-size: 13px; }
+    .panel { padding: 22px; border-radius: 22px; background: #fffdf7b8; border: 1px solid var(--line); box-shadow: none; }
+    .panel-heading h2 { font-size: 13px; letter-spacing: .04em; }
+    .score-label, .stat-box span, .combo-row span, .next-note-info span { font-size: 11px; }
+    .score-value { color: #65795b; font-family: var(--sans); font-weight: 700; font-size: 34px; letter-spacing: .02em; }
+    .stat-box { background: #f1f1e6; border-radius: 12px; }
+    .next-note-info strong { font: 600 12px var(--sans); line-height: 1.7; }
+    .note-orb { background: #edf0e3; border-color: #d8dfcc; color: #5d7455; }
+    .finger-guide div, .finger-guide b, .howto li { color: var(--muted); font-size: 11px; }
+    .finger-guide b { color: #65795b; }
+    .howto { gap: 14px; }
+    .step-number { background: #e9eedf; color: #617457; border-radius: 50%; width: 23px; height: 23px; flex-basis: 23px; }
+    .practice-tip { background: #f3eddf; color: #79705b; border-radius: 12px; font-size: 11px; }
+    .progress-track { background: #e5e5d8; height: 5px; }
+    footer { color: var(--muted); font-size: 11px; margin: 26px 0 10px; }
+    .app.is-playing .game-card { background: #e5d2b4; border-color: #ceba9c; border-radius: 20px; }
+    .app.is-playing .key-row { background: #ac8864; border-color: #987455; border-radius: 14px; }
+    .app.is-playing .key { background: linear-gradient(90deg, #eee9db, #fffdf4 45%, #e1dccf); border-color: #b8ac94; color: #5a604e; }
+    .app.is-playing .key.next { background: linear-gradient(#e8eecf, #d6e2ad); border-color: #81945a; box-shadow: 0 0 15px #b2c57b80, inset 0 1px #fff; }
+    .app.is-playing .key.pressed { background: #d6e3c4; }
+    .app.is-playing .playfield { background-color: #34392e; background-image: radial-gradient(ellipse at 50% 100%, #71836433, transparent 70%); }
+    .app.is-playing .overlay { background: #34392eed; }
+    .app.is-playing .start-box h2 { color: #faf5e9; }
+    .app.is-playing .start-box p, .app.is-free-play .free-play-info { color: #e2e5d6; }
+    .hud-combo, .pause-button, .stop-recording-button { background: #424d3eeb; border-color: #94a08580; border-radius: 14px; }
+    .hud-combo span { color: #e1e6d5; letter-spacing: .02em; font-family: var(--sans); }
+    .toast { color: #f2d89d; }
+    @media (max-width: 940px) {
+      .layout { grid-template-columns: minmax(0, 1fr) 230px; gap: 20px; }
+      .panel { padding: 16px; }
+    }
+    @media (max-width: 720px) {
+      .app:not(.is-playing) { padding-top: max(20px, env(safe-area-inset-top)); }
+      header { margin-bottom: 26px; padding-bottom: 18px; }
+      .brand-name { font-size: 22px; }
+      .live-indicator { font-size: 10px; padding: 7px 9px; }
+      .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+      .section-top { gap: 18px; }
+      h1 { font-size: 30px; }
+      .subheading { font-size: 12px; }
+      .song-select { max-width: 58%; }
+      .app:not(.is-playing) .playfield, .app:not(.is-playing) .overlay { min-height: 340px; }
+      .app:not(.is-playing) .start-icon { width: 130px; height: 110px; }
+      .start-box h2 { font-size: 19px; }
+      .primary-button, .stop-button { padding-inline: 20px; }
+      .game-settings, .free-tuning, .beta-feedback, .creator-mode, .community-panel { padding: 15px; border-radius: 16px; }
+      .side-column { gap: 12px; }
+      .creator-fields input, .creator-fields select, .beta-feedback textarea, .beta-feedback select, .free-tuning-content select, #creatorChart { font-size: 16px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .app:not(.is-playing) .section-top { flex-wrap: nowrap; align-items: center; gap: 12px; }
+      .app:not(.is-playing) .section-top > div:first-child { flex-basis: auto; }
+      .app:not(.is-playing) .selection-controls { width: auto; }
+      h1 { font-size: 20px; }
+      .song-select { max-width: 210px; }
+      .app:not(.is-playing) .playfield, .app:not(.is-playing) .overlay { min-height: 240px; }
+      .app:not(.is-playing) .start-box { padding: 15px; }
+      .app:not(.is-playing) .start-icon { width: 90px; height: 75px; margin-bottom: 4px; }
+      .start-box h2 { font-size: 18px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
