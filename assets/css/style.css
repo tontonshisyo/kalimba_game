@@ -170,6 +170,14 @@
     .chart-label span { color: var(--muted); font-size: 9px; font-weight: 400; }
     .creator-mode textarea { resize: vertical; min-height: 130px; font: 12px/1.65 var(--mono); tab-size: 2; }
     .creator-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .community-panel { margin: 12px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fffaf0; }
+    .community-panel h2 { margin: 0; font-size: 16px; }
+    .community-panel p, .community-publish-help { font-size: 11px; line-height: 1.7; }
+    #communitySongs { display: grid; gap: 7px; margin: 10px 0; }
+    #communitySongs button { text-align: left; overflow-wrap: anywhere; }
+    #publishSongButton, .community-publish-help { display: none; }
+    .community-enabled #publishSongButton { display: inline-block; }
+    .community-enabled .community-publish-help { display: block; }
     .creator-button { min-height: 36px; padding: 7px 11px; border: 1px solid #bda88d; border-radius: 7px; background: #fffaf0; color: #60452d; font-size: 10px; font-weight: 700; cursor: pointer; }
     .creator-button-primary { border-color: #80502e; background: #80502e; color: #fff6e7; }
     .creator-button-danger { border-color: #bd8977; color: #8a3f32; }
