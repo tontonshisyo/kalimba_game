@@ -65,6 +65,8 @@
     .app.is-free-play .free-play-exit { display: block; }
     .app.is-free-play .free-play-info { display: flex; position: absolute; inset: 50px 10px 85px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #60452d; text-align: center; pointer-events: none; }
     .free-play-info strong { font-size: 14px; }
+    .free-record-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 420px; pointer-events: auto; }
+    .free-record-controls output { flex-basis: 100%; font-size: 11px; }
     .free-play-info > span { font: 500 clamp(28px, 10vh, 64px) var(--mono); }
     .free-play-info p { margin: 0; font-size: 11px; line-height: 1.7; }
     .app.is-free-play .key .key-note { font-size: clamp(8px, 1.2vw, 12px); }
