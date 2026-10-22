@@ -157,6 +157,45 @@
       let runTempoScale = 1;
       let activeNotes = [];
       let freeNotes = [];
+      let freeRecording = [];
+      let freeRecordStartedAt = null;
+      let freeReplayStartedAt = null;
+      let freeReplayCursor = 0;
+
+      function refreshFreeRecordingControls(message) {
+        document.getElementById("freeRecordButton").textContent = freeRecordStartedAt === null ? "録音を開始" : "録音を停止";
+        document.getElementById("freeRecordButton").disabled = freeReplayStartedAt !== null;
+        document.getElementById("freeReplayButton").disabled = !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
+        document.getElementById("freeReplayStopButton").hidden = freeReplayStartedAt === null;
+        if (message) document.getElementById("freeRecordStatus").textContent = message;
+      }
+
+      function stopFreeTransport() {
+        const wasRecording = freeRecordStartedAt !== null;
+        const wasPlaying = freeReplayStartedAt !== null;
+        freeRecordStartedAt = null;
+        freeReplayStartedAt = null;
+        freeNotes = [];
+        clearPointerInteraction();
+        refreshFreeRecordingControls(wasRecording ? `録音しました（${freeRecording.length}音）` : wasPlaying ? "再生を停止しました" : undefined);
+      }
+
+      function updateFreeReplay(now) {
+        if (freeReplayStartedAt === null) return;
+        const elapsed = now - freeReplayStartedAt;
+        while (freeReplayCursor < freeRecording.length && elapsed >= freeRecording[freeReplayCursor].time) {
+          const event = freeRecording[freeReplayCursor++];
+          playTone(event.lane, undefined, event.note);
+          effects.push({ lane: event.lane, createdAt: now });
+          document.getElementById("freePlayNote").textContent = event.note.displayName;
+          keyButtons[event.lane].classList.add("pressed");
+          window.setTimeout(() => keyButtons[event.lane].classList.remove("pressed"), 105);
+        }
+        if (freeReplayCursor === freeRecording.length) {
+          freeReplayStartedAt = null;
+          refreshFreeRecordingControls("再生が終わりました");
+        }
+      }
       let effects = [];
       let state = "ready";
       let isTestPlay = false;
@@ -1474,10 +1513,12 @@
       function playKey(index) {
         if (isRecording) recordKeyPress(index);
         else if (state === "free") {
+          if (freeReplayStartedAt !== null) return;
           playTone(index);
           keyButtons[index].classList.add("pressed");
           window.setTimeout(() => keyButtons[index].classList.remove("pressed"), 105);
           const createdAt = performance.now();
+          if (freeRecordStartedAt !== null) freeRecording.push({ lane: index, time: createdAt - freeRecordStartedAt, note: { ...getFreeNote(index) } });
           effects.push({ lane: index, createdAt });
           freeNotes.push({ lane: index, createdAt });
           document.getElementById("freePlayNote").textContent = getFreeNote(index).displayName;
@@ -1666,14 +1707,17 @@
 
         if (state === "free") {
           const lifetime = travelTime * 1000;
+          const replayElapsed = freeReplayStartedAt === null ? null : now - freeReplayStartedAt;
+          const visibleNotes = replayElapsed === null ? freeNotes : freeRecording.slice(freeReplayCursor).filter((event) => event.time - replayElapsed <= lifetime).map((event) => ({ lane: event.lane, createdAt: freeReplayStartedAt + event.time - lifetime, descending: true }));
           freeNotes = freeNotes.filter((note) => now - note.createdAt < lifetime);
-          for (const note of freeNotes) {
+          for (const note of visibleNotes) {
             const progress = Math.max(0, Math.min(1, (now - note.createdAt) / lifetime));
-            const { x, y } = geometry.lanePoint(note.lane, 1 - progress);
-            const bounds = geometry.laneBounds(note.lane, progress);
+            const depth = note.descending ? progress : 1 - progress;
+            const { x, y } = geometry.lanePoint(note.lane, depth);
+            const bounds = geometry.laneBounds(note.lane, 1 - depth);
             const radiusX = Math.max(3, (bounds.right - bounds.left) * .46);
             ctx.save();
-            ctx.globalAlpha = 1 - progress ** 3;
+            ctx.globalAlpha = note.descending ? 1 : 1 - progress ** 3;
             ctx.fillStyle = notes[note.lane].color;
             ctx.shadowColor = notes[note.lane].color;
             ctx.shadowBlur = 12 * (1 - progress);
@@ -1704,6 +1748,7 @@
         // Keep the animation loop scheduled even if a drawing operation fails.
         requestAnimationFrame(frame);
         if (state === "playing") update();
+        if (state === "free") updateFreeReplay(now);
         draw(now);
       }
 
@@ -1846,15 +1891,15 @@
         return kalimbaAudio;
       }
 
-      function playTone(lane, signature) {
+      function playTone(lane, signature, recordedNote) {
         try {
           if (!audioContext || audioContext.state === "closed") audioContext = new (window.AudioContext || window.webkitAudioContext)();
           if (audioContext.state !== "running") audioContext.resume().catch((error) => console.warn("音声の再開に失敗しました。", error));
           const voice = getKalimbaAudio();
           const now = audioContext.currentTime;
-          const note = signature !== undefined ? getSignatureNote(lane, signature)
+          const note = recordedNote || (signature !== undefined ? getSignatureNote(lane, signature)
             : state === "free" ? getFreeNote(lane)
-            : getSignatureNote(lane, isRecording ? creatorKeySignatureInput.value : state === "playing" ? chart.keySignature : "C");
+            : getSignatureNote(lane, isRecording ? creatorKeySignatureInput.value : state === "playing" ? chart.keySignature : "C"));
           const decay = Math.max(1.4, Math.min(4, 3.1 - note.semitones / 28 * .9));
           const master = audioContext.createGain();
           master.gain.value = .32 * settings.volume / 100;
@@ -1985,6 +2030,7 @@
         isTestPlay = false;
         pausedAt = 0;
         state = "free";
+        refreshFreeRecordingControls();
         updateKeyLabels();
         document.getElementById("freeTuningPanel").open = false;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -2128,6 +2174,7 @@
 
       function stopGame() {
         if (state !== "paused" && state !== "free") return;
+        if (state === "free") stopFreeTransport();
         if (isTestPlay) {
           returnFromTestPlay("テストプレイを終了しました。譜面は保存されていません。");
           return;
@@ -2181,6 +2228,23 @@
 
       document.getElementById("startButton").addEventListener("click", startGame);
       document.getElementById("freePlayButton").addEventListener("click", startFreePlay);
+      document.getElementById("freeRecordButton").addEventListener("click", () => {
+        if (state !== "free") return;
+        if (freeRecordStartedAt !== null) { stopFreeTransport(); return; }
+        stopFreeTransport();
+        freeRecording = [];
+        freeRecordStartedAt = performance.now();
+        refreshFreeRecordingControls("録音中 · 終わったら「録音を停止」を押してください");
+      });
+      document.getElementById("freeReplayButton").addEventListener("click", () => {
+        if (state !== "free" || !freeRecording.length || freeRecordStartedAt !== null) return;
+        stopFreeTransport();
+        freeReplayCursor = 0;
+        freeReplayStartedAt = performance.now() + travelTime * 1000;
+        refreshFreeRecordingControls("再生中 · 音符が鍵盤に届くと鳴ります");
+      });
+      document.getElementById("freeReplayStopButton").addEventListener("click", stopFreeTransport);
+      document.addEventListener("visibilitychange", () => { if (document.hidden && state === "free") stopFreeTransport(); });
       document.getElementById("exitFreePlayButton").addEventListener("click", () => {
         stopGame();
         document.getElementById("freePlayButton").focus();
