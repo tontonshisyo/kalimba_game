@@ -1,15 +1,15 @@
 {
   "id": "./",
-  "name": "OTOIRO — カリンバ・リズムゲーム",
-  "short_name": "OTOIRO",
-  "description": "スマートフォンのタッチ操作で楽しめるカリンバ練習ゲーム",
+  "name": "おといろ — 小さなカリンバ",
+  "short_name": "おといろ",
+  "description": "ぽろん、と音のひとやすみ。曲に合わせても、自由に弾いても。",
   "lang": "ja",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#111319",
-  "theme_color": "#111319",
+  "background_color": "#f7f3ea",
+  "theme_color": "#f7f3ea",
   "icons": [
     {
       "src": "assets/icons/kalimba.svg",
