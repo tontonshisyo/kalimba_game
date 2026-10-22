@@ -206,6 +206,12 @@
             <div class="free-play-info">
               <strong>フリー演奏</strong>
               <span id="freePlayNote">♪</span>
+              <div class="free-record-controls">
+                <button class="creator-button" id="freeRecordButton" type="button">録音を開始</button>
+                <button class="creator-button" id="freeReplayButton" type="button" disabled>録音を再生</button>
+                <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
+                <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
+              </div>
               <p>鍵盤を自由に弾いてみよう<br>タッチ・スライド・キーボード（1〜0、Q〜U）で演奏</p>
             </div>
             <div class="overlay" id="overlay">
