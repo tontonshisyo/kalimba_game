@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f1e8d8">
+  <meta name="theme-color" content="#f7f3ea">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="スマートフォンのタッチ操作で楽しめる、カリンバのリズムゲーム。">
+  <meta name="description" content="ぽろん、と音のひとやすみ。曲に合わせても、自由に弾いても楽しめる小さなカリンバ。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/kalimba.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/kalimba.svg">
   <link rel="stylesheet" href="assets/css/style.css">
-  <title>OTOIRO — カリンバ・リズムゲーム</title>
+  <title>おといろ — 小さなカリンバ</title>
 </head>
 <body>
   <div class="app">
@@ -22,21 +22,21 @@
             <path d="M5 4v14M8 2v16M11 5v13M14 3v15M17 6v12M20 4v14"/><path d="M4 19h17"/>
           </svg>
         </div>
-        <div><div class="brand-name">おといろ</div><div class="brand-caption">カリンバで音あそび</div></div>
+        <div><div class="brand-name">おといろ</div><div class="brand-caption">小さなカリンバ</div></div>
       </div>
-      <div class="header-right"><span class="desktop-only">好きな音から、気軽にどうぞ。</span><span class="live-indicator"><i class="live-dot"></i> いつでも練習</span></div>
+      <div class="header-right"><span class="desktop-only">ぽろん、とひとやすみ。</span><span class="live-indicator"><i class="live-dot"></i> 音を楽しむ時間</span></div>
     </header>
 
     <main class="layout">
       <section class="main-column" aria-label="ゲーム画面">
         <div class="section-top">
-          <div><div class="eyebrow">きょうの音あそび</div><h1>音の流れに、指をのせて。</h1><p class="subheading">光る鍵盤を弾いて、カリンバに親しもう。</p></div>
+          <div><div class="eyebrow">YOUR LITTLE KALIMBA</div><h1>音と、ひとやすみ。</h1><p class="subheading">曲に合わせても、自由に弾いても。自分のペースでどうぞ。</p></div>
           <label class="sr-only" for="songSelect">練習曲を選択</label>
           <div class="selection-controls">
             <label class="practice-mode" for="practiceMode">
               <input id="practiceMode" type="checkbox">
-              <span>練習モード</span>
-              <small>正しい音まで待つ</small>
+              <span>ゆっくり練習</span>
+              <small>弾くまで待ってくれる</small>
             </label>
             <select class="song-select" id="songSelect" aria-label="練習曲">
               <option value="twinkle">きらきら星 — やさしい</option>
@@ -52,8 +52,52 @@
           <span>練習モードでこの拍から始めます</span>
         </div>
 
+        <div class="game-card" id="gameCard">
+          <div class="playfield" id="playfield">
+            <canvas id="gameCanvas" aria-label="ノーツが流れるゲーム画面"></canvas>
+            <div class="field-top">
+              <div class="status-pill"><strong id="bpmValue">BPM 96</strong></div>
+              <div class="status-pill" id="gameStatus">ひとやすみ</div>
+            </div>
+            <div class="toast" id="toast" aria-live="polite"></div>
+            <div class="game-hud">
+              <div class="hud-combo"><span>つながった音</span><strong id="hudCombo">0</strong></div>
+              <button class="pause-button" id="pauseButton" type="button" aria-label="演奏を一時停止">一時停止</button>
+              <button class="pause-button free-play-exit" id="exitFreePlayButton" type="button">ホームへ</button>
+              <button class="stop-recording-button" id="stopRecordingButton" type="button" hidden>録音を止める</button>
+            </div>
+            <div class="recording-indicator" id="recordingIndicator" hidden></div>
+            <div class="free-play-info">
+              <strong>フリー演奏</strong>
+              <span id="freePlayNote">♪</span>
+              <div class="free-record-controls">
+                <button class="creator-button" id="freeRecordButton" type="button">録音を開始</button>
+                <button class="creator-button" id="freeReplayButton" type="button" disabled>録音を再生</button>
+                <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
+                <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
+              </div>
+              <p>鍵盤を自由に弾いてみよう<br>タッチ・スライド・キーボード（1〜0、Q〜U）で演奏</p>
+            </div>
+            <div class="overlay" id="overlay">
+              <div class="start-box">
+                <div class="start-icon" aria-hidden="true"><svg viewBox="0 0 180 150" fill="none"><ellipse cx="90" cy="137" rx="51" ry="7" fill="#546e5c" opacity=".1"/><path d="M52 23Q90 13 128 23L140 111Q141 131 121 133H59Q39 131 40 111Z" fill="#d7ac7e"/><path d="M57 28Q90 20 123 28L134 110Q136 126 120 127H60Q44 126 46 110Z" fill="#e5c39d"/><circle cx="90" cy="99" r="14" fill="#b4865d"/><circle cx="90" cy="99" r="9" fill="#8c694d"/><path d="M58 48H122" stroke="#896c53" stroke-width="6" stroke-linecap="round"/><g stroke="#fff8e9" stroke-width="7" stroke-linecap="round"><path d="M61 39V72M71 37V85M81 36V101M91 35V113M101 36V101M111 37V85M121 39V72"/></g><path d="M54 45H126" stroke="#ae8b69" stroke-width="4" stroke-linecap="round"/><path d="M22 54q12-1 12-13M147 68q10 4 15-6M142 22l4-6M25 92l-5 3" stroke="#8da58b" stroke-width="3" stroke-linecap="round"/><circle cx="33" cy="25" r="4" fill="#dba48d"/><circle cx="154" cy="98" r="3" fill="#dba48d"/></svg></div>
+                <h2 id="overlayTitle">今日は、どんな音にする？</h2>
+                <p id="overlayCopy">曲に合わせて、光る鍵盤をぽろん。<br>自由に弾きたいときは「フリー演奏」へ。</p>
+                <div class="overlay-actions">
+                  <button class="primary-button" id="startButton">曲を弾く</button>
+                  <button class="stop-button" id="freePlayButton" type="button">フリー演奏</button>
+                  <button class="stop-button" id="stopButton" type="button" hidden>演奏をやめる</button>
+                </div>
+              </div>
+            </div>
+            <div class="track-labels" aria-hidden="true" id="trackLabels"></div>
+          </div>
+          <div class="key-row" id="keyRow" aria-label="17鍵カリンバの音階。左端D6、中央C4、右端E6"></div>
+          <p class="key-hit-hint"><span class="touch-hint">横画面がおすすめ · 光る音階キーをタップして演奏</span><span class="keyboard-hint">標準17鍵の並び · 左端 D6 ／ 中央 C4 ／ 右端 E6 · キー 1–0、Q–U</span></p>
+        </div>
+
         <details class="game-settings">
-          <summary>演奏の設定</summary>
+          <summary>音と表示の設定</summary>
           <div class="settings-list">
             <div class="key-color-setting">
               <label for="keyColorPreset"><strong>鍵盤の色マーク</strong>
@@ -76,7 +120,7 @@
               <output id="volumeValue" for="volumeSetting">100%</output>
             </label>
             <label class="setting-row" for="noteSpeedSetting">
-              <span><strong>ノーツの速さ</strong><small>譜面が流れる速さ</small></span>
+              <span><strong>音符の流れる速さ</strong><small>譜面が流れる速さ</small></span>
               <input id="noteSpeedSetting" type="range" min="50" max="150" step="10" value="100">
               <output id="noteSpeedValue" for="noteSpeedSetting">100%</output>
             </label>
@@ -89,13 +133,13 @@
         </details>
 
         <details class="free-tuning" id="freeTuningPanel">
-          <summary>フリー演奏の調</summary>
+          <summary>フリー演奏の音づくり</summary>
           <div class="free-tuning-content">
-            <label for="freeTuningMode">変更方式
+            <label for="freeTuningMode">音の変え方
               <select id="freeTuningMode">
-                <option value="signature">① 配置を保って調号を付ける</option>
-                <option value="tonic">② 最低音を変えて全体を移調</option>
-                <option value="custom">③ 鍵盤ごとに半音上下</option>
+                <option value="signature">ドレミの位置をそのままに、調を変える</option>
+                <option value="tonic">いちばん低い音から、全体を変える</option>
+                <option value="custom">鍵盤ひとつずつ、音を変える</option>
               </select>
             </label>
             <p id="freeTuningHelp"></p>
@@ -112,14 +156,14 @@
 
         <section class="community-panel" aria-label="みんなの曲">
           <h2>みんなの曲</h2>
-          <p>投稿された曲を選んで遊べます。自分の曲は下の作成画面から投稿できます。</p>
-          <button class="creator-button" id="communityRefreshButton" type="button">曲を読み込む</button>
+          <p>だれかの作った一曲に、出会ってみよう。</p>
+          <button class="creator-button" id="communityRefreshButton" type="button">曲を更新</button>
           <div id="communitySongs"></div>
           <button class="creator-button" id="communityMoreButton" type="button" hidden>さらに読み込む</button>
           <p id="communityStatus" role="status">投稿機能を準備中です。</p>
         </section>
         <details class="beta-feedback">
-          <summary>β版 · 意見箱</summary>
+          <summary>おといろへのおたより · β</summary>
           <form id="betaFeedbackForm">
             <p>感想、ほしい機能、不具合などを教えてください。送った内容と管理者の返信・対応状況は、みんなに公開されます。名前・メールアドレスは不要です。</p>
             <label for="feedbackCategory">種類<select id="feedbackCategory"><option value="idea">感想・アイデア</option><option value="bug">不具合の報告</option><option value="other">その他</option></select></label>
@@ -130,7 +174,7 @@
             <p id="feedbackStatus" role="status" aria-live="polite"></p>
           </form>
           <section class="feedback-board" aria-label="みんなの意見と対応状況">
-            <h3>みんなの意見・対応状況</h3>
+            <h3>届いたおたより</h3>
             <button class="creator-button" id="feedbackReload" type="button">一覧を更新</button>
             <div id="feedbackList"></div>
             <button class="creator-button" id="feedbackMore" type="button" hidden>さらに読み込む</button>
@@ -138,7 +182,7 @@
           </section>
         </details>
         <details class="creator-mode">
-          <summary>製作者モード — 譜面を作る・編集する</summary>
+          <summary>曲づくりのアトリエ</summary>
           <div class="creator-content">
             <p class="creator-help">1行に「拍,音名」を1つ書きます。例：<code>0,C4</code>。拍は小数で入力でき、同じ拍の音は低い音から高い音へアルペジオで演奏し、一番高い音が拍に合います。<code>#</code>から行末まではメモとして無視されます。</p>
             <div class="creator-fields">
@@ -149,7 +193,7 @@
             <p class="chart-help" id="creatorKeySignatureHelp">ドレミの位置・オクターブはそのままに、調号に合う音へ♯・♭を付けます。譜面欄は元の音名で入力します（例：ト長調ではF4がF♯4として鳴ります）。</p>
             <figure class="sheet-preview">
               <figcaption>
-                <span>五線譜エディター <small>拍の位置は0から表示</small></span>
+                <span>五線譜で曲づくり <small>拍の位置は0から表示</small></span>
                 <output id="sheetTempo" for="creatorBpm">BPM 100</output>
               </figcaption>
               <div class="sheet-editor-tools">
@@ -172,9 +216,9 @@
 6,G4</textarea>
             <p class="chart-help" id="creatorChartHelp">使える音：D6 B5 G5 E5 C5 A4 F4 D4 C4 E4 G4 B4 D5 F5 A5 C6 E6</p>
             <div class="creator-actions">
-              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>みんなに曲を公開</button>
+              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>みんなに届ける</button>
               <span class="community-publish-help">投稿すると、曲名と譜面が誰でも遊べる状態で公開されます。公開してよい曲を投稿してください。</span>
-              <button class="creator-button" id="loadChartButton" type="button">選択中の曲を読み込む</button>
+              <button class="creator-button" id="loadChartButton" type="button">選択中の曲を更新</button>
               <button class="creator-button" id="saveChartButton" type="button">選択中の曲に保存</button>
               <button class="creator-button creator-button-primary" id="saveNewChartButton" type="button">新しい曲として保存</button>
               <button class="creator-button creator-button-danger" id="deleteChartButton" type="button" hidden>選択中の曲を削除</button>
@@ -186,7 +230,7 @@
               <span class="start-beat-help">この拍以降をテストします</span>
               <button class="creator-button" id="previewChartButton" type="button">譜面を試聴</button>
               <button class="creator-button" id="stopPreviewButton" type="button" hidden>試聴を停止</button>
-              <button class="creator-button creator-button-primary" id="testPlayButton" type="button">テストプレイ</button>
+              <button class="creator-button creator-button-primary" id="testPlayButton" type="button">弾いてたしかめる</button>
             </div>
             <div class="creator-actions creator-file-actions">
               <button class="creator-button creator-button-primary" id="connectProjectButton" type="button">スマホ用譜面の保存先を設定・確認</button>
@@ -217,50 +261,7 @@
           </div>
         </details>
 
-        <div class="game-card" id="gameCard">
-          <div class="playfield" id="playfield">
-            <canvas id="gameCanvas" aria-label="ノーツが流れるゲーム画面"></canvas>
-            <div class="field-top">
-              <div class="status-pill"><strong id="bpmValue">BPM 96</strong></div>
-              <div class="status-pill" id="gameStatus">READY</div>
-            </div>
-            <div class="toast" id="toast" aria-live="polite"></div>
-            <div class="game-hud">
-              <div class="hud-combo"><span>COMBO</span><strong id="hudCombo">0</strong></div>
-              <button class="pause-button" id="pauseButton" type="button" aria-label="演奏を一時停止">一時停止</button>
-              <button class="pause-button free-play-exit" id="exitFreePlayButton" type="button">フリー演奏を終了</button>
-              <button class="stop-recording-button" id="stopRecordingButton" type="button" hidden>録音を止める</button>
-            </div>
-            <div class="recording-indicator" id="recordingIndicator" hidden></div>
-            <div class="free-play-info">
-              <strong>フリー演奏</strong>
-              <span id="freePlayNote">♪</span>
-              <div class="free-record-controls">
-                <button class="creator-button" id="freeRecordButton" type="button">録音を開始</button>
-                <button class="creator-button" id="freeReplayButton" type="button" disabled>録音を再生</button>
-                <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
-                <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
-              </div>
-              <p>鍵盤を自由に弾いてみよう<br>タッチ・スライド・キーボード（1〜0、Q〜U）で演奏</p>
-            </div>
-            <div class="overlay" id="overlay">
-              <div class="start-box">
-                <div class="start-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-                <h2 id="overlayTitle">準備はいい？</h2>
-                <p id="overlayCopy">画面の音階キーをタップして演奏。<br>ノーツが判定ラインに重なる瞬間がチャンス。</p>
-                <div class="overlay-actions">
-                  <button class="primary-button" id="startButton">演奏をはじめる</button>
-                  <button class="stop-button" id="freePlayButton" type="button">フリー演奏</button>
-                  <button class="stop-button" id="stopButton" type="button" hidden>演奏をやめる</button>
-                </div>
-              </div>
-            </div>
-            <div class="track-labels" aria-hidden="true" id="trackLabels"></div>
-          </div>
-          <div class="key-row" id="keyRow" aria-label="17鍵カリンバの音階。左端D6、中央C4、右端E6"></div>
-          <p class="key-hit-hint"><span class="touch-hint">横画面がおすすめ · 光る音階キーをタップして演奏</span><span class="keyboard-hint">標準17鍵の並び · 左端 D6 ／ 中央 C4 ／ 右端 E6 · キー 1–0、Q–U</span></p>
-        </div>
-        <footer>音声はお使いのブラウザーで生成されます · ヘッドホン推奨</footer>
+        <footer>おといろ · イヤホンでも、やさしい響きを。</footer>
       </section>
 
       <aside class="side-column" aria-label="練習情報">
@@ -279,7 +280,7 @@
           <div class="panel-heading"><h2>つぎの音</h2></div>
           <div class="next-note">
             <div class="note-orb" id="nextOrb">—</div>
-            <div class="next-note-info"><strong id="nextNote">曲を選んでスタート</strong><span id="nextHint">キーを押すタイミングを確認</span></div>
+            <div class="next-note-info"><strong id="nextNote">好きな曲を選んでね</strong><span id="nextHint">演奏中は、次の音をお知らせ</span></div>
           </div>
           <div class="finger-guide">
             <div><b class="thumb">親指</b>中央</div><div><b>左手</b>左側</div><div><b>右手</b>右側</div>
@@ -289,11 +290,11 @@
         <section class="panel">
           <div class="panel-heading"><h2>あそびかた</h2></div>
           <ol class="howto">
-            <li><span class="step-number">01</span><span>曲を選んで「演奏をはじめる」</span></li>
-            <li><span class="step-number">02</span><span>ノーツが判定ラインに来たら同じ音を弾く</span></li>
-            <li><span class="step-number">03</span><span>光るキーをタップして運指を練習</span></li>
+            <li><span class="step-number">01</span><span>曲を選んで「曲を弾く」</span></li>
+            <li><span class="step-number">02</span><span>音符が下のラインに来たら、同じ音を弾こう</span></li>
+            <li><span class="step-number">03</span><span>ゆっくり練習なら、弾くまで待ってくれます</span></li>
           </ol>
-          <div class="practice-tip">ヒント：音を出すには、最初に演奏ボタンを押してください。音量は端末側で調整できます。</div>
+          <div class="practice-tip">はじめてなら「ゆっくり練習」がおすすめ。音が出ないときは、端末の音量も確かめてみてね。</div>
         </section>
       </aside>
     </main>
