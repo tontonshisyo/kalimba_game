@@ -110,6 +110,14 @@
           </div>
         </details>
 
+        <section class="community-panel" aria-label="みんなの曲">
+          <h2>みんなの曲</h2>
+          <p>投稿された曲を選んで遊べます。自分の曲は下の作成画面から投稿できます。</p>
+          <button class="creator-button" id="communityRefreshButton" type="button">曲を読み込む</button>
+          <div id="communitySongs"></div>
+          <button class="creator-button" id="communityMoreButton" type="button" hidden>さらに読み込む</button>
+          <p id="communityStatus" role="status">投稿機能を準備中です。</p>
+        </section>
         <details class="creator-mode">
           <summary>製作者モード — 譜面を作る・編集する</summary>
           <div class="creator-content">
@@ -145,6 +153,8 @@
 6,G4</textarea>
             <p class="chart-help" id="creatorChartHelp">使える音：D6 B5 G5 E5 C5 A4 F4 D4 C4 E4 G4 B4 D5 F5 A5 C6 E6</p>
             <div class="creator-actions">
+              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>みんなに曲を公開</button>
+              <span class="community-publish-help">投稿すると、曲名と譜面が誰でも遊べる状態で公開されます。公開してよい曲を投稿してください。</span>
               <button class="creator-button" id="loadChartButton" type="button">選択中の曲を読み込む</button>
               <button class="creator-button" id="saveChartButton" type="button">選択中の曲に保存</button>
               <button class="creator-button creator-button-primary" id="saveNewChartButton" type="button">新しい曲として保存</button>
@@ -169,7 +179,7 @@
             <p class="project-folder-help">
               <strong>スマホにも譜面を反映する場合：</strong>PCで <code>http://127.0.0.1:5500/</code> を開いて保存してください。初回は上の「スマホ用譜面の保存先を設定・確認」を押し、<strong>Live Serverで開いているゲームと同じ、index.html がある program_1022 フォルダー</strong>を選びます。目安：OneDrive → デスクトップ → program_1022。<code>assets</code> や <code>data</code> の中ではありません。フォルダーを選んだ後に許可を求められたら「許可」を押してください。
             </p>
-            <p class="chart-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
+            <p class="chart-help portable-export-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
             <section class="recording-panel" aria-label="鍵盤入力で譜面を録音">
               <h3>鍵盤で録音</h3>
               <p>メトロノームのカウントイン後に鍵盤を弾きます。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
