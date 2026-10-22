@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "otoiro-shell-v71";
+const CACHE_NAME = "otoiro-shell-v72";
 const APP_FILES = [
   "./",
   "./index.html",
