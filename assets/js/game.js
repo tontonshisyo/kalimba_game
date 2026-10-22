@@ -1,0 +1,2250 @@
+(() => {
+      "use strict";
+
+      const keyboardShortcuts = ["1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","y","u"];
+      const cMajorKalimba = [
+        { name: "D", octave: 6, semitones: 26, side: "left", color: "#9bc8ff" },
+        { name: "B", octave: 5, semitones: 23, side: "left", color: "#b3bcfa" },
+        { name: "G", octave: 5, semitones: 19, side: "left", color: "#d1b4f2" },
+        { name: "E", octave: 5, semitones: 16, side: "left", color: "#f0b2d1" },
+        { name: "C", octave: 5, semitones: 12, side: "left", color: "#ffb0ba" },
+        { name: "A", octave: 4, semitones: 9, side: "left", color: "#ffc3a1" },
+        { name: "F", octave: 4, semitones: 5, side: "left", color: "#f4cf89" },
+        { name: "D", octave: 4, semitones: 2, side: "left", color: "#e0e89b" },
+        { name: "C", octave: 4, semitones: 0, side: "center", color: "#a5f1d2" },
+        { name: "E", octave: 4, semitones: 4, side: "right", color: "#b7e8b3" },
+        { name: "G", octave: 4, semitones: 7, side: "right", color: "#9fe6a7" },
+        { name: "B", octave: 4, semitones: 11, side: "right", color: "#8ce4c4" },
+        { name: "D", octave: 5, semitones: 14, side: "right", color: "#85dedc" },
+        { name: "F", octave: 5, semitones: 17, side: "right", color: "#85d4ee" },
+        { name: "A", octave: 5, semitones: 21, side: "right", color: "#8cc9f6" },
+        { name: "C", octave: 6, semitones: 24, side: "right", color: "#9bc8ff" },
+        { name: "E", octave: 6, semitones: 28, side: "right", color: "#b3bcfa" }
+      ];
+      const notes = [
+        ...cMajorKalimba.map((note, index) => ({
+          ...note,
+          frequency: 261.625565 * 2 ** (note.semitones / 12),
+          key: keyboardShortcuts[index]
+        }))
+      ];
+      const scaleToLane = [8, 7, 9, 6, 10, 5, 11, 4];
+      const charts = {
+        twinkle: {
+          bpm: 96,
+          steps: [
+            [0,0],[1,0],[2,4],[3,4],[4,5],[5,5],[6,4],[8,3],[9,3],[10,2],[11,2],[12,1],[13,1],[14,0],
+            [16,4],[17,4],[18,3],[19,3],[20,2],[21,2],[22,1],[24,4],[25,4],[26,3],[27,3],[28,2],[29,2],[30,1],
+            [32,0],[33,0],[34,4],[35,4],[36,5],[37,5],[38,4],[40,3],[41,3],[42,2],[43,2],[44,1],[45,1],[46,0],
+            [48,4],[49,4],[50,3],[51,3],[52,2],[53,2],[54,1],[56,4],[57,4],[58,3],[59,3],[60,2],[61,2],[62,1],[64,0]
+          ]
+        },
+        maryHadALittleLamb: {
+          bpm: 108,
+          steps: [
+            [0,2],[1,1],[2,0],[3,1],[4,2],[5,2],[6,2],
+            [8,1],[9,1],[10,1],[12,2],[13,4],[14,4],
+            [16,2],[17,1],[18,0],[19,1],[20,2],[21,2],[22,2],[23,2],
+            [24,1],[25,1],[26,2],[27,1],[28,0]
+          ]
+        }
+      };
+      const builtInChartDefaults = { ...charts };
+      const builtInSongNames = {
+        twinkle: "きらきら星 — やさしい",
+        maryHadALittleLamb: "メリーさんの羊 — やさしい"
+      };
+      const makerStorageKey = "otoiro-maker-songs-v1";
+      const songSelect = document.getElementById("songSelect");
+      const practiceStartControl = document.getElementById("practiceStartControl");
+      const practiceStartBeatInput = document.getElementById("practiceStartBeat");
+      const creatorNameInput = document.getElementById("creatorSongName");
+      const creatorBpmInput = document.getElementById("creatorBpm");
+      const creatorKeySignatureInput = document.getElementById("creatorKeySignature");
+      const creatorChartInput = document.getElementById("creatorChart");
+      const testStartBeatInput = document.getElementById("testStartBeat");
+      const sheetPreview = document.getElementById("sheetPreview");
+      const sheetTempo = document.getElementById("sheetTempo");
+      const sheetPreviewMessage = document.getElementById("sheetPreviewMessage");
+      const creatorStatus = document.getElementById("creatorStatus");
+      const creatorDetails = document.querySelector(".creator-mode");
+      const deleteChartButton = document.getElementById("deleteChartButton");
+      const previewChartButton = document.getElementById("previewChartButton");
+      const stopPreviewButton = document.getElementById("stopPreviewButton");
+      const testPlayButton = document.getElementById("testPlayButton");
+      const exportChartsButton = document.getElementById("exportChartsButton");
+      const exportMobileAppButton = document.getElementById("exportMobileAppButton");
+      const importChartsButton = document.getElementById("importChartsButton");
+      const connectProjectButton = document.getElementById("connectProjectButton");
+      const importChartsFile = document.getElementById("importChartsFile");
+      const quantizeSetting = document.getElementById("quantizeSetting");
+      const startRecordingButton = document.getElementById("startRecordingButton");
+      const stopRecordingButton = document.getElementById("stopRecordingButton");
+      const recordingIndicator = document.getElementById("recordingIndicator");
+      const songNames = { ...builtInSongNames };
+      let makerSongs = [];
+      let projectDirectoryHandle = null;
+      let projectSaveQueue = Promise.resolve();
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const playfield = document.getElementById("playfield");
+      const keyRow = document.getElementById("keyRow");
+      const overlay = document.getElementById("overlay");
+      const toast = document.getElementById("toast");
+      const laneCount = notes.length;
+      const travelTime = 1.8;
+      const goodWindow = .2;
+      const arpeggioNoteInterval = .06;
+      const maxArpeggioDuration = .3;
+      const app = document.querySelector(".app");
+      const practiceModeInput = document.getElementById("practiceMode");
+      const settingInputs = {
+        volume: document.getElementById("volumeSetting"),
+        noteSpeed: document.getElementById("noteSpeedSetting"),
+        practiceTempo: document.getElementById("practiceTempoSetting")
+      };
+      const settingOutputs = {
+        volume: document.getElementById("volumeValue"),
+        noteSpeed: document.getElementById("noteSpeedValue"),
+        practiceTempo: document.getElementById("practiceTempoValue")
+      };
+      const practiceTempoSetting = document.querySelector(".practice-tempo-setting");
+      const selectionControls = [...document.querySelectorAll(".selection-controls input, .selection-controls select, #practiceStartBeat, .game-settings input, .game-settings select, .creator-mode input, .creator-mode select, .creator-mode textarea, .creator-mode button")];
+      const settingsStorageKey = "otoiro-settings-v1";
+      const keyColorPresetHints = {
+        none: "色マークを付けません。見本は左端D6から右端E6の並びです。",
+        alternating: "左端から赤・青を交互に付けます。隣の鍵盤を見分ける目印になります。",
+        everyOther: "左端から1本おきに赤い目印を付けます。",
+        cOnly: "すべてのド（C4・C5・C6）に赤い目印を付けます。",
+        cAndF: "すべてのドに赤、ファに青の目印を付けます。音の位置を覚える基準にできます。",
+        hands: "左手側は青、右手側は橙、中央のドは緑にします。",
+        noteNames: "ドからシまで音名ごとに7色で分けます。同じ音名はオクターブが違っても同じ色です。"
+      };
+      const settingsDefaults = { volume: 100, noteSpeed: 100, practiceTempo: 100, practiceMode: false, keyColorPreset: "none" };
+      const settings = loadSettings();
+      const freeTuningStorageKey = "otoiro-free-tuning-v1";
+      const freeSignatures = [
+        { id: "C", label: "ハ長調 C（調号なし）", fifths: 0 },
+        { id: "G", label: "ト長調 G（♯1個）", fifths: 1 },
+        { id: "D", label: "ニ長調 D（♯2個）", fifths: 2 },
+        { id: "A", label: "イ長調 A（♯3個）", fifths: 3 },
+        { id: "E", label: "ホ長調 E（♯4個）", fifths: 4 },
+        { id: "B", label: "ロ長調 B（♯5個）", fifths: 5 },
+        { id: "Fs", label: "嬰ヘ長調 F♯（♯6個）", fifths: 6 },
+        { id: "Cs", label: "嬰ハ長調 C♯（♯7個）", fifths: 7 },
+        { id: "F", label: "ヘ長調 F（♭1個）", fifths: -1 },
+        { id: "Bb", label: "変ロ長調 B♭（♭2個）", fifths: -2 },
+        { id: "Eb", label: "変ホ長調 E♭（♭3個）", fifths: -3 },
+        { id: "Ab", label: "変イ長調 A♭（♭4個）", fifths: -4 },
+        { id: "Db", label: "変ニ長調 D♭（♭5個）", fifths: -5 },
+        { id: "Gb", label: "変ト長調 G♭（♭6個）", fifths: -6 },
+        { id: "Cb", label: "変ハ長調 C♭（♭7個）", fifths: -7 }
+      ];
+      const freeTuning = loadFreeTuning();
+      freeSignatures.forEach((entry) => {
+        const option = document.createElement("option");
+        option.value = entry.id;
+        option.textContent = entry.label;
+        creatorKeySignatureInput.append(option);
+      });
+      let audioContext = null;
+      let kalimbaAudio = null;
+      let chart = charts.twinkle;
+      let practiceMode = false;
+      let practiceHoldAt = null;
+      let practiceNote = null;
+      let runTravelTime = travelTime;
+      let runTempoScale = 1;
+      let activeNotes = [];
+      let freeNotes = [];
+      let effects = [];
+      let state = "ready";
+      let isTestPlay = false;
+      let previewTimers = [];
+      let isRecording = false;
+      let recordingStartedAt = Number.POSITIVE_INFINITY;
+      let recordingBeatDuration = 0;
+      let recordingSubdivision = 2;
+      let recordingEvents = [];
+      let recordingTickTimer = 0;
+      let startedAt = 0;
+      let pausedAt = 0;
+      let score = 0;
+      let combo = 0;
+      let bestCombo = 0;
+      let judged = 0;
+      let accuracyPoints = 0;
+      let toastTimer = 0;
+      let hitLine = 0;
+
+      function parseCreatorEvents(source, allowInvalid = false) {
+        const noteLane = new Map(notes.map((note, lane) => [`${note.name}${note.octave}`.toUpperCase(), lane]));
+        const events = [];
+        const errors = [];
+        const seen = new Set();
+        const lines = source.split(/\r?\n/);
+        if (lines.length > 2000) {
+          if (!allowInvalid) throw new Error("譜面は2000行以内にしてください。");
+          errors.push("譜面は2000行以内にしてください。");
+          lines.length = 2000;
+        }
+        const reportError = (message) => {
+          if (!allowInvalid) throw new Error(message);
+          errors.push(message);
+        };
+        for (let index = 0; index < lines.length; index++) {
+          const line = lines[index].split("#", 1)[0].trim();
+          if (!line) continue;
+          const fields = line.split(/[,\s]+/);
+          if (fields.length !== 2) {
+            reportError(`${index + 1}行目: 「拍,音名」の形式で入力してください。`);
+            continue;
+          }
+          const beat = Number(fields[0]);
+          if (!Number.isFinite(beat) || beat < 0 || beat > 10000) {
+            reportError(`${index + 1}行目: 拍は0〜10000の数値で入力してください。`);
+            continue;
+          }
+          const lane = noteLane.get(fields[1].toUpperCase());
+          if (lane === undefined) {
+            reportError(`${index + 1}行目: ${fields[1]} は17鍵カリンバの音名ではありません。`);
+            continue;
+          }
+          const step = beat * 2;
+          const duplicateKey = `${step}:${lane}`;
+          if (seen.has(duplicateKey)) {
+            reportError(`${index + 1}行目: 同じ拍に同じ音が重複しています。`);
+            continue;
+          }
+          seen.add(duplicateKey);
+          events.push([step, lane]);
+        }
+        events.sort((a, b) => a[0] - b[0] || notes[a[1]].semitones - notes[b[1]].semitones);
+        return { events, errors };
+      }
+
+      function parseCreatorChart(name, bpmValue, source, keySignature = "C") {
+        const title = name.trim();
+        const bpm = Number(bpmValue);
+        if (!title || title.length > 40) throw new Error("曲名を1〜40文字で入力してください。");
+        if (!Number.isInteger(bpm) || bpm < 30 || bpm > 240) throw new Error("BPMは30〜240の整数で入力してください。");
+        const { events } = parseCreatorEvents(source);
+        if (!events.length) throw new Error("譜面に音を1つ以上入力してください。");
+        if (!freeSignatures.some((entry) => entry.id === keySignature)) throw new Error("対応していない調号です。");
+        return { name: title, bpm, steps: events, directLanes: true, keySignature };
+      }
+
+      function renderSheetPreview() {
+        const svgNamespace = "http://www.w3.org/2000/svg";
+        const createSvgElement = (tag, attributes = {}, text = "") => {
+          const element = document.createElementNS(svgNamespace, tag);
+          for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, String(value));
+          if (text) element.textContent = text;
+          return element;
+        };
+        const { events, errors } = parseCreatorEvents(creatorChartInput.value, true);
+        const eventsByBeat = new Map();
+        let lastBeat = 0;
+        for (const [step, lane] of events) {
+          const beat = step / 2;
+          if (!eventsByBeat.has(beat)) eventsByBeat.set(beat, []);
+          eventsByBeat.get(beat).push(lane);
+          lastBeat = Math.max(lastBeat, beat);
+        }
+
+        const left = 64;
+        const staffTop = 48;
+        const staffGap = 14;
+        const staffBottom = staffTop + staffGap * 4;
+        const beatWidth = 48;
+        const width = Math.max(640, left + (lastBeat + 4) * beatWidth + 24);
+        const height = 176;
+        const fragment = document.createDocumentFragment();
+        const pitchLetters = ["C", "D", "E", "F", "G", "A", "B"];
+        const pitchIndex = (note) => note.octave * 7 + pitchLetters.indexOf(note.name);
+        const basePitch = 4 * 7 + pitchLetters.indexOf("E");
+
+        for (let beat = 0; beat <= Math.floor((width - left - 24) / beatWidth); beat++) {
+          const x = left + beat * beatWidth;
+          const isBar = beat % 4 === 0;
+          fragment.append(createSvgElement("line", {
+            x1: x, y1: staffTop, x2: x, y2: 154,
+            class: isBar ? "sheet-bar-line" : "sheet-beat-line"
+          }));
+          fragment.append(createSvgElement("text", {
+            x, y: 169, class: "sheet-beat-label"
+          }, `${beat}拍`));
+        }
+
+        for (let line = 0; line < 5; line++) {
+          const y = staffTop + line * staffGap;
+          fragment.append(createSvgElement("line", {
+            x1: left, y1: y, x2: width - 12, y2: y, class: "sheet-staff-line"
+          }));
+        }
+        fragment.append(createSvgElement("text", {
+          x: 3, y: staffBottom + 10, class: "sheet-clef"
+        }, "\u{1D11E}"));
+
+        for (const [beat, lanes] of eventsByBeat) {
+          const x = left + beat * beatWidth;
+          lanes.forEach((lane) => {
+            const note = notes[lane];
+            const soundingNote = getSignatureNote(lane, creatorKeySignatureInput.value);
+            const stepFromBottom = pitchIndex(note) - basePitch;
+            const y = staffBottom - stepFromBottom * (staffGap / 2);
+            const noteCircle = createSvgElement("circle", {
+              cx: x, cy: y, r: 4.5, class: "sheet-notehead"
+            });
+            noteCircle.append(createSvgElement("title", {}, `${beat}拍 ${soundingNote.displayName}`));
+            fragment.append(noteCircle);
+            if (soundingNote.accidental) {
+              fragment.append(createSvgElement("text", { x: x - 14, y: y + 4, class: "sheet-accidental" }, soundingNote.accidental));
+            }
+            fragment.append(createSvgElement("circle", {
+              cx: x, cy: y, r: 10, class: "sheet-hit-target",
+              "data-step": beat * 2, "data-lane": lane, tabindex: 0, role: "button",
+              "aria-label": `${beat}拍 ${soundingNote.displayName}。タップまたはDeleteで削除、ドラッグで移動`
+            }));
+          });
+        }
+
+        if (!events.length) {
+          fragment.append(createSvgElement("text", {
+            x: left + 16, y: 83, class: "sheet-empty"
+          }, "五線譜をタップすると音符を追加できます"));
+        }
+
+        sheetPreview.replaceChildren(fragment);
+        sheetPreview.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        sheetPreview.setAttribute("width", String(width));
+        sheetPreview.setAttribute("height", String(height));
+        sheetPreview.setAttribute("aria-label", `${events.length}音の五線譜。横軸は1拍ごとに48ピクセル、縦軸はト音記号の音高です。同じ拍の音は同じ位置に表示します。`);
+        sheetTempo.value = `BPM ${creatorBpmInput.value || "—"} · ${freeSignatures.find((entry) => entry.id === creatorKeySignatureInput.value).label}`;
+        sheetTempo.textContent = sheetTempo.value;
+        sheetPreviewMessage.classList.toggle("is-error", errors.length > 0);
+        if (errors.length) {
+          const remaining = errors.length > 1 ? `（ほか${errors.length - 1}件）` : "";
+          sheetPreviewMessage.textContent = `入力を確認してください。有効な音のみ表示しています: ${errors[0]}${remaining}`;
+        } else {
+          sheetPreviewMessage.textContent = "横軸は1拍ごとに等間隔で、0拍から表示します。小数の拍は拍の間に比例して配置し、同時刻の音は縦に並べます。";
+        }
+      }
+
+      // Keep editor coordinates identical to the staff used by renderSheetPreview.
+      function sheetNotePosition(step, lane) {
+        const letters = ["C", "D", "E", "F", "G", "A", "B"];
+        const note = notes[lane];
+        return { x: 64 + step / 2 * 48, y: 104 - (note.octave * 7 + letters.indexOf(note.name) - 30) * 7 };
+      }
+
+      function sheetPoint(event) {
+        const matrix = sheetPreview.getScreenCTM();
+        if (!matrix) return null;
+        const point = sheetPreview.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        return point.matrixTransform(matrix.inverse());
+      }
+
+      function sheetNoteAtPoint(point) {
+        if (!point || point.x < 64 || point.x > sheetPreview.viewBox.baseVal.width) return null;
+        const snap = Number(document.getElementById("sheetSnap").value);
+        const beat = Math.round((point.x - 64) / 48 / snap) * snap;
+        if (beat < 0 || beat > 10000) return null;
+        let lane = 0;
+        notes.forEach((_, index) => {
+          if (Math.abs(sheetNotePosition(0, index).y - point.y) < Math.abs(sheetNotePosition(0, lane).y - point.y)) lane = index;
+        });
+        if (Math.abs(sheetNotePosition(0, lane).y - point.y) > 3.5) return null;
+        return [beat * 2, lane];
+      }
+
+      function editSheetNote(original, replacement) {
+        if (creatorChartInput.disabled || isRecording) return;
+        try {
+          // Do not silently discard unfinished text or comments when editing visually.
+          const { events } = parseCreatorEvents(creatorChartInput.value);
+          if (replacement && events.some(([step, lane]) => step === replacement[0] && lane === replacement[1] &&
+              (!original || step !== original[0] || lane !== original[1]))) {
+            throw new Error("移動先には同じ音があります。");
+          }
+          const noteText = ([step, lane]) => `${step / 2},${notes[lane].name}${notes[lane].octave}`;
+          const lines = creatorChartInput.value.split(/\r?\n/);
+          if (original) {
+            const originalName = `${notes[original[1]].name}${notes[original[1]].octave}`.toUpperCase();
+            const lineIndex = lines.findIndex((line) => {
+              const fields = line.split("#", 1)[0].trim().split(/[,\s]+/);
+              return fields.length === 2 && Number(fields[0]) * 2 === original[0] && fields[1].toUpperCase() === originalName;
+            });
+            if (lineIndex < 0) return;
+            const commentAt = lines[lineIndex].indexOf("#");
+            const comment = commentAt >= 0 ? lines[lineIndex].slice(commentAt) : "";
+            if (replacement) lines[lineIndex] = `${noteText(replacement)}${comment ? ` ${comment}` : ""}`;
+            else if (comment) lines[lineIndex] = comment;
+            else lines.splice(lineIndex, 1);
+          } else if (replacement) {
+            if (lines.length === 1 && !lines[0].trim()) lines[0] = noteText(replacement);
+            else lines.push(noteText(replacement));
+          }
+          const source = lines.join("\n");
+          parseCreatorEvents(source);
+          stopPreview();
+          creatorChartInput.value = source;
+          renderSheetPreview();
+          showCreatorStatus("五線譜の編集を反映しました。保存ボタンで保存してください。");
+        } catch (error) {
+          showCreatorStatus(error.message, true);
+        }
+      }
+
+      let sheetGesture = null;
+      function cancelSheetGesture() {
+        if (!sheetGesture) return;
+        const gesture = sheetGesture;
+        sheetGesture = null;
+        gesture.preview?.remove();
+        if (sheetPreview.hasPointerCapture(gesture.id)) sheetPreview.releasePointerCapture(gesture.id);
+      }
+
+      sheetPreview.addEventListener("pointerdown", (event) => {
+        if (creatorChartInput.disabled || isRecording || sheetGesture || !event.isPrimary || event.button !== 0) return;
+        const point = sheetPoint(event);
+        if (!point) return;
+        const { events } = parseCreatorEvents(creatorChartInput.value, true);
+        const nearest = events.map((note) => {
+          const position = sheetNotePosition(...note);
+          return { note, distance: Math.hypot(point.x - position.x, point.y - position.y) };
+        }).sort((a, b) => a.distance - b.distance)[0];
+        const original = nearest && nearest.distance <= 10 ? nearest.note : null;
+        sheetGesture = { id: event.pointerId, x: event.clientX, y: event.clientY, original, source: creatorChartInput.value, moved: false };
+        if (original) event.preventDefault();
+        sheetPreview.setPointerCapture(event.pointerId);
+      });
+      sheetPreview.addEventListener("pointermove", (event) => {
+        const gesture = sheetGesture;
+        if (!gesture || gesture.id !== event.pointerId) return;
+        if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 6) gesture.moved = true;
+        if (!gesture.original || !gesture.moved) return;
+        const target = sheetNoteAtPoint(sheetPoint(event));
+        gesture.preview?.remove();
+        gesture.preview = null;
+        if (!target) return;
+        const position = sheetNotePosition(...target);
+        const preview = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        for (const [name, value] of Object.entries({ cx: position.x, cy: position.y, r: 6, class: "sheet-drag-preview" })) preview.setAttribute(name, String(value));
+        sheetPreview.append(preview);
+        gesture.preview = preview;
+      });
+      sheetPreview.addEventListener("pointerup", (event) => {
+        const gesture = sheetGesture;
+        if (!gesture || gesture.id !== event.pointerId) return;
+        if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 6) gesture.moved = true;
+        const target = sheetNoteAtPoint(sheetPoint(event));
+        cancelSheetGesture();
+        if (gesture.source !== creatorChartInput.value) return;
+        if (gesture.moved) {
+          if (gesture.original && target) editSheetNote(gesture.original, target);
+        } else if (gesture.original) {
+          editSheetNote(gesture.original, null);
+        } else if (target) {
+          const { events } = parseCreatorEvents(creatorChartInput.value, true);
+          const existing = events.find(([step, lane]) => step === target[0] && lane === target[1]);
+          editSheetNote(existing || null, existing ? null : target);
+        }
+      });
+      sheetPreview.addEventListener("pointercancel", cancelSheetGesture);
+      sheetPreview.addEventListener("lostpointercapture", cancelSheetGesture);
+      sheetPreview.addEventListener("keydown", (event) => {
+        const target = event.target.closest(".sheet-hit-target");
+        if (!target || !["Delete", "Backspace", "Enter", " "].includes(event.key)) return;
+        event.preventDefault();
+        editSheetNote([Number(target.dataset.step), Number(target.dataset.lane)], null);
+      });
+
+      function sortCreatorChartSource(source) {
+        parseCreatorEvents(source);
+        const lines = source.split(/\r?\n/);
+        const isNoteLine = (line) => Boolean(line.split("#", 1)[0].trim());
+        const pitches = new Map(notes.map((note) => [`${note.name}${note.octave}`.toUpperCase(), note.semitones]));
+        const fields = (line) => line.split("#", 1)[0].trim().split(/[,\s]+/);
+        const sorted = lines.filter(isNoteLine).sort((a, b) => {
+          const first = fields(a);
+          const second = fields(b);
+          return Number(first[0]) - Number(second[0]) || pitches.get(first[1].toUpperCase()) - pitches.get(second[1].toUpperCase());
+        });
+        let index = 0;
+        // Move inline comments with their notes; retain standalone comments and blank lines.
+        return lines.map((line) => isNoteLine(line) ? sorted[index++] : line).join("\n");
+      }
+
+      function sortCreatorChart() {
+        if (creatorChartInput.disabled || isRecording) return;
+        try {
+          const source = sortCreatorChartSource(creatorChartInput.value);
+          cancelSheetGesture();
+          stopPreview();
+          creatorChartInput.value = source;
+          renderSheetPreview();
+          showCreatorStatus("拍順・同じ拍は低い音順に並べ替えました。保存ボタンで保存してください。");
+        } catch (error) {
+          showCreatorStatus(error.message, true);
+        }
+      }
+
+      function chartToSource(songChart) {
+        const laneFor = (noteIndex) => songChart.directLanes ? noteIndex : scaleToLane[noteIndex];
+        return [...songChart.steps]
+          .sort((a, b) => a[0] - b[0] || notes[laneFor(a[1])].semitones - notes[laneFor(b[1])].semitones)
+          .map(([step, noteIndex]) => {
+            const lane = songChart.directLanes ? noteIndex : scaleToLane[noteIndex];
+            return `${Number((step / 2).toFixed(3))},${notes[lane].name}${notes[lane].octave}`;
+          })
+          .join("\n");
+      }
+
+      function showCreatorStatus(message, isError = false) {
+        creatorStatus.textContent = message;
+        creatorStatus.classList.toggle("is-error", isError);
+      }
+
+      function stopPreview(showMessage = false) {
+        previewTimers.forEach((timer) => window.clearTimeout(timer));
+        previewTimers = [];
+        keyButtons.forEach((button) => button.classList.remove("pressed"));
+        previewChartButton.disabled = false;
+        stopPreviewButton.hidden = true;
+        if (showMessage) showCreatorStatus("試聴を停止しました。");
+      }
+
+      function getArpeggiatedEvents(steps, directLanes) {
+        const grouped = new Map();
+        for (const [step, noteIndex] of steps) {
+          const lane = directLanes ? noteIndex : scaleToLane[noteIndex];
+          if (!grouped.has(step)) grouped.set(step, []);
+          grouped.get(step).push(lane);
+        }
+        const events = [];
+        let leadIn = 0;
+        for (const [step, lanes] of grouped) {
+          const hands = {
+            left: lanes.filter((lane) => notes[lane].side === "left"),
+            right: lanes.filter((lane) => notes[lane].side === "right")
+          };
+          // Either thumb can play the center C4; use the less busy hand.
+          for (const lane of lanes.filter((lane) => notes[lane].side === "center")) {
+            const hand = hands.left.length <= hands.right.length ? hands.left : hands.right;
+            hand.push(lane);
+          }
+          for (const [handSide, hand] of Object.entries(hands)) {
+            hand.sort((a, b) => notes[a].semitones - notes[b].semitones);
+            const interval = hand.length > 1
+              ? Math.min(arpeggioNoteInterval, maxArpeggioDuration / (hand.length - 1))
+              : 0;
+            const spread = interval * Math.max(0, hand.length - 1);
+            leadIn = Math.max(leadIn, spread);
+            hand.forEach((lane, index) => {
+              events.push({ step, lane, offset: (index - hand.length + 1) * interval, handSide, handIndex: index });
+            });
+          }
+        }
+        events.sort((a, b) => a.step - b.step || a.offset - b.offset);
+        return { events, leadIn };
+      }
+
+      function playMetronome(accent) {
+        try {
+          if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === "suspended") audioContext.resume();
+          const now = audioContext.currentTime;
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          oscillator.type = "sine";
+          oscillator.frequency.value = accent ? 1320 : 880;
+          gain.gain.setValueAtTime(.0001, now);
+          gain.gain.exponentialRampToValueAtTime(Math.max(.0002, .16 * settings.volume / 100), now + .004);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + .045);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + .05);
+        } catch (error) {
+          console.warn("メトロノームを再生できませんでした。ブラウザーの音声設定をご確認ください。", error);
+        }
+      }
+
+      function scheduleRecordingBeat(beatIndex, deadline) {
+        if (!isRecording) return;
+        recordingTickTimer = window.setTimeout(() => {
+          if (!isRecording) return;
+          if (beatIndex < 4) {
+            playMetronome(beatIndex === 0);
+            recordingIndicator.textContent = `カウントイン ${beatIndex + 1}/4`;
+          } else {
+            if (beatIndex === 4) {
+              recordingStartedAt = deadline;
+              recordingIndicator.textContent = "録音中 · メトロノームに合わせて鍵盤を弾いてください";
+            }
+            playMetronome((beatIndex - 4) % 4 === 0);
+          }
+          scheduleRecordingBeat(beatIndex + 1, deadline + recordingBeatDuration);
+        }, Math.max(0, deadline - performance.now()));
+      }
+
+      function startRecording() {
+        if (isRecording || state === "playing" || state === "paused" || state === "free") return;
+        const title = creatorNameInput.value.trim();
+        const bpm = Number(creatorBpmInput.value);
+        if (!title || title.length > 40) {
+          showCreatorStatus("曲名を1〜40文字で入力してください。", true);
+          return;
+        }
+        if (!Number.isInteger(bpm) || bpm < 30 || bpm > 240) {
+          showCreatorStatus("BPMは30〜240の整数で入力してください。", true);
+          return;
+        }
+        stopPreview();
+        if (audioContext && audioContext.state === "suspended") audioContext.resume();
+        isRecording = true;
+        updateKeyLabels();
+        recordingStartedAt = Number.POSITIVE_INFINITY;
+        recordingBeatDuration = 60000 / bpm;
+        recordingSubdivision = Number(quantizeSetting.value);
+        recordingEvents = [];
+        startRecordingButton.hidden = true;
+        stopRecordingButton.hidden = false;
+        selectionControls.forEach((control) => { control.disabled = true; });
+        app.classList.add("is-playing", "is-recording");
+        recordingIndicator.hidden = false;
+        recordingIndicator.textContent = "録音の準備中";
+        document.getElementById("gameStatus").textContent = "RECORDING";
+        overlay.classList.add("hidden");
+        resizeCanvas();
+        scheduleRecordingBeat(0, performance.now() + 60);
+      }
+
+      function recordKeyPress(lane) {
+        if (!isRecording || performance.now() < recordingStartedAt) return;
+        playTone(lane);
+        keyButtons[lane].classList.add("pressed");
+        window.setTimeout(() => keyButtons[lane].classList.remove("pressed"), 105);
+        const elapsedBeats = Math.max(0, (performance.now() - recordingStartedAt) / recordingBeatDuration);
+        const beat = Math.round(elapsedBeats * recordingSubdivision) / recordingSubdivision;
+        if (!recordingEvents.some((event) => event.beat === beat && event.lane === lane)) {
+          recordingEvents.push({ beat, lane });
+        }
+      }
+
+      function stopRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        updateKeyLabels();
+        window.clearTimeout(recordingTickTimer);
+        app.classList.remove("is-playing", "is-recording");
+        recordingIndicator.hidden = true;
+        startRecordingButton.hidden = false;
+        stopRecordingButton.hidden = true;
+        document.getElementById("gameStatus").textContent = "READY";
+        document.getElementById("overlayTitle").textContent = "録音を終了しました";
+        document.getElementById("overlayCopy").textContent = "譜面を確認して、保存またはもう一度録音してください。";
+        document.getElementById("startButton").textContent = "演奏をはじめる";
+        overlay.classList.remove("hidden");
+        selectionControls.forEach((control) => { control.disabled = false; });
+        resizeCanvas();
+        if (!recordingEvents.length) {
+          showCreatorStatus("録音した音がありません。譜面欄は変更していません。");
+          return;
+        }
+        recordingEvents.sort((a, b) => a.beat - b.beat || a.lane - b.lane);
+        creatorChartInput.value = recordingEvents
+          .map(({ beat, lane }) => `${Number(beat.toFixed(4))},${notes[lane].name}${notes[lane].octave}`)
+          .join("\n");
+        renderSheetPreview();
+        showCreatorStatus(`${recordingEvents.length}音をクオンタイズして譜面欄に反映しました。保存する場合は保存ボタンを押してください。`);
+      }
+
+      function previewCreatorChart() {
+        let previewChart;
+        try {
+          previewChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
+        } catch (error) {
+          showCreatorStatus(error.message, true);
+          return;
+        }
+        stopPreview();
+        const { events, leadIn } = getArpeggiatedEvents(previewChart.steps, true);
+        const beatDuration = 60000 / previewChart.bpm;
+        const startAt = performance.now() + leadIn;
+        previewChartButton.disabled = true;
+        stopPreviewButton.hidden = false;
+        showCreatorStatus(`「${previewChart.name}」を試聴中です。`);
+        for (const { step, lane, offset } of events) {
+          const timer = window.setTimeout(() => {
+            playTone(lane, previewChart.keySignature);
+            keyButtons[lane].classList.add("pressed");
+            window.setTimeout(() => keyButtons[lane].classList.remove("pressed"), 120);
+          }, Math.max(0, startAt + (step * beatDuration / 2 + offset) - performance.now()));
+          previewTimers.push(timer);
+        }
+        const finalTime = Math.max(...events.map(({ step, offset }) => step * beatDuration / 2 + offset));
+        previewTimers.push(window.setTimeout(() => {
+          previewTimers = [];
+          previewChartButton.disabled = false;
+          stopPreviewButton.hidden = true;
+          showCreatorStatus(`「${previewChart.name}」の試聴が終わりました。`);
+        }, Math.max(0, startAt + finalTime + 650 - performance.now())));
+      }
+
+      function persistMakerSongs(songs) {
+        try {
+          localStorage.setItem(makerStorageKey, JSON.stringify(songs.map(normalizeMakerSong)));
+          return true;
+        } catch (error) {
+          console.error("譜面を保存できませんでした。ブラウザーの保存容量を確認してください。", error);
+          showCreatorStatus("保存できませんでした。ブラウザーの保存容量を確認してください。", true);
+          return false;
+        }
+      }
+
+      function validateChartPack(pack, allowEmpty = false) {
+        if (!pack || pack.format !== "otoiro-chart-pack" || pack.version !== 1 || !Array.isArray(pack.songs)) {
+          throw new Error("譜面ファイルの形式が対応していません。");
+        }
+        if ((!allowEmpty && !pack.songs.length) || pack.songs.length > 200) {
+          throw new Error("譜面ファイルには1〜200曲を含めてください。");
+        }
+        const imported = [];
+        const seenIds = new Set();
+        for (let index = 0; index < pack.songs.length; index++) {
+          const entry = pack.songs[index];
+          const validId = entry && (
+            Object.prototype.hasOwnProperty.call(builtInSongNames, entry.id) ||
+            (typeof entry.id === "string" && /^user-[a-zA-Z0-9-]{1,100}$/.test(entry.id))
+          );
+          if (!validId) throw new Error(`${index + 1}曲目: 曲IDが正しくありません。`);
+          if (seenIds.has(entry.id)) throw new Error(`${index + 1}曲目: 曲IDが重複しています。`);
+          seenIds.add(entry.id);
+          const validated = parseCreatorChart(entry.name, entry.bpm, entry.source, entry.keySignature);
+          imported.push({
+            id: entry.id,
+            name: validated.name,
+            bpm: validated.bpm,
+            keySignature: validated.keySignature,
+            source: chartToSource(validated)
+          });
+        }
+        return imported;
+      }
+
+      function mergeMakerSongs(songs, authoritative = false) {
+        const merged = new Map(authoritative ? [] : makerSongs.map((song) => [song.id, song]));
+        for (const song of songs) merged.set(song.id, song);
+        return [...merged.values()];
+      }
+
+      function applyMakerSongs(songs) {
+        const songIds = new Set(songs.map((song) => song.id));
+        for (const previousSong of makerSongs) {
+          if (songIds.has(previousSong.id)) continue;
+          if (previousSong.id in builtInSongNames) {
+            charts[previousSong.id] = builtInChartDefaults[previousSong.id];
+            songNames[previousSong.id] = builtInSongNames[previousSong.id];
+          } else {
+            delete charts[previousSong.id];
+            delete songNames[previousSong.id];
+          }
+        }
+        makerSongs = songs;
+        for (const song of songs) {
+          const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature);
+          charts[song.id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature };
+          songNames[song.id] = validated.name;
+        }
+        refreshSongOptions(songSelect.value);
+        deleteChartButton.hidden = !songSelect.value.startsWith("user-");
+      }
+
+      function openProjectHandleDatabase() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open("otoiro-project-folder", 1);
+          request.onupgradeneeded = () => request.result.createObjectStore("handles");
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      async function getSavedProjectDirectory() {
+        const database = await openProjectHandleDatabase();
+        return new Promise((resolve, reject) => {
+          const request = database.transaction("handles", "readonly").objectStore("handles").get("project");
+          request.onsuccess = () => {
+            database.close();
+            resolve(request.result || null);
+          };
+          request.onerror = () => {
+            database.close();
+            reject(request.error);
+          };
+        });
+      }
+
+      async function saveProjectDirectory(directoryHandle) {
+        const database = await openProjectHandleDatabase();
+        return new Promise((resolve, reject) => {
+          const transaction = database.transaction("handles", "readwrite");
+          transaction.objectStore("handles").put(directoryHandle, "project");
+          transaction.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+          transaction.onerror = () => {
+            database.close();
+            reject(transaction.error);
+          };
+        });
+      }
+
+      async function getProjectChartsFile(directoryHandle, create = false) {
+        const assets = await directoryHandle.getDirectoryHandle("assets", { create });
+        const data = await assets.getDirectoryHandle("data", { create });
+        return data.getFileHandle("custom-charts.json", { create });
+      }
+
+      function normalizeMakerSong(song) {
+        const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature);
+        return { ...song, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated) };
+      }
+
+      function createChartPack(songs) {
+        return {
+          format: "otoiro-chart-pack",
+          version: 1,
+          updatedAt: new Date().toISOString(),
+          songs: songs.map(normalizeMakerSong)
+        };
+      }
+
+      async function readProjectSongs(directoryHandle) {
+        const fileHandle = await getProjectChartsFile(directoryHandle);
+        const file = await fileHandle.getFile();
+        if (file.size > 2 * 1024 * 1024) throw new Error("プロジェクトの譜面ファイルが2MBを超えています。");
+        const pack = JSON.parse(await file.text());
+        return {
+          songs: validateChartPack(pack, true),
+          authoritative: typeof pack.updatedAt === "string"
+        };
+      }
+
+      async function writeProjectSongs(directoryHandle, songs) {
+        const permission = await directoryHandle.queryPermission({ mode: "readwrite" });
+        if (permission !== "granted") throw new Error("書き込み許可がありません。プロジェクトフォルダーと再連携してください。");
+        const fileHandle = await getProjectChartsFile(directoryHandle, true);
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(createChartPack(songs), null, 2));
+        await writable.close();
+        if (window.location.protocol !== "file:") await verifyServedProjectSongs(songs);
+      }
+
+      async function verifyServedProjectSongs(expectedSongs) {
+        const url = new URL("./assets/data/custom-charts.json", window.location.href);
+        url.searchParams.set("verify", String(Date.now()));
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("スマホ配信側の譜面ファイルを読み込めません。Live Serverの公開フォルダーを確認してください。");
+        const actualSongs = validateChartPack(await response.json(), true);
+        const actualById = new Map(actualSongs.map((song) => [song.id, song]));
+        const matches = actualSongs.length === expectedSongs.length && expectedSongs.every((song) => {
+          const actual = actualById.get(song.id);
+          return actual && actual.name === song.name && actual.bpm === song.bpm && actual.keySignature === (song.keySignature || "C") && actual.source === song.source;
+        });
+        if (!matches) {
+          throw new Error("選んだ保存先とスマホ配信中のフォルダーが一致しません。Live Serverで開いているこのゲームと同じフォルダーを選び直してください。");
+        }
+      }
+
+      function syncProjectSongs(songs) {
+        if (!projectDirectoryHandle) return Promise.resolve(false);
+        const snapshot = songs.map(normalizeMakerSong);
+        projectSaveQueue = projectSaveQueue
+          .then(() => writeProjectSongs(projectDirectoryHandle, snapshot))
+          .then(() => true)
+          .catch((error) => {
+            console.error("プロジェクトの譜面ファイルを更新できませんでした。", error);
+            showCreatorStatus(`ブラウザー内には保存しましたが、プロジェクトへの保存に失敗しました。${error.message}`, true);
+            return false;
+          });
+        return projectSaveQueue;
+      }
+
+      async function connectProjectFolder() {
+        if (window.location.protocol === "file:") {
+          showCreatorStatus("この画面はファイルを直接開いているため、スマホ配信先と連携できません。PCで http://127.0.0.1:5500/ を開き、そちらの製作者モードから保存してください。", true);
+          return false;
+        }
+        if (!("showDirectoryPicker" in window)) {
+          showCreatorStatus("プロジェクトへの直接保存は、File System Access API対応のPC版ChromeまたはEdgeで利用できます。", true);
+          return;
+        }
+        let connectionStage = "フォルダー選択";
+        try {
+          let directoryHandle;
+          try {
+            directoryHandle = await window.showDirectoryPicker({ mode: "readwrite", startIn: "desktop" });
+          } catch (error) {
+            if (error.name === "AbortError") {
+              showCreatorStatus("フォルダー選択が閉じられました。連携する場合は program_1022 フォルダーを選び、「フォルダーの選択」を押してください。");
+              return false;
+            }
+            throw error;
+          }
+
+          connectionStage = "フォルダー確認";
+          try {
+            await directoryHandle.getFileHandle("index.html");
+          } catch (error) {
+            if (error.name === "NotFoundError") {
+              throw new Error("選んだフォルダーに index.html がありません。「OneDrive → デスクトップ → program_1022」を選び直してください。");
+            }
+            throw error;
+          }
+          connectionStage = "書き込み許可";
+          let permission = await directoryHandle.queryPermission({ mode: "readwrite" });
+          if (permission !== "granted") permission = await directoryHandle.requestPermission({ mode: "readwrite" });
+          if (permission !== "granted") throw new Error("フォルダーへの書き込みが許可されませんでした。");
+
+          connectionStage = "既存の譜面読み込み";
+          let projectSongs = [];
+          try {
+            projectSongs = (await readProjectSongs(directoryHandle)).songs;
+          } catch (error) {
+            if (error.name !== "NotFoundError") throw error;
+          }
+          connectionStage = "譜面ファイル保存・配信確認";
+          const mergedSongs = mergeMakerSongs(projectSongs);
+          await writeProjectSongs(directoryHandle, mergedSongs);
+          connectionStage = "連携情報保存";
+          await saveProjectDirectory(directoryHandle);
+          projectDirectoryHandle = directoryHandle;
+          if (!persistMakerSongs(mergedSongs)) {
+            showCreatorStatus("プロジェクトへ譜面を保存しましたが、ブラウザー内保存はできませんでした。", true);
+          }
+          applyMakerSongs(mergedSongs);
+          showCreatorStatus("保存先を確認しました。スマホ配信中の譜面ファイルと一致しています。今後の保存も同期されます。");
+          return true;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            showCreatorStatus(`${connectionStage}が中断されました。フォルダーを選んだ後に許可確認が表示された場合は、「許可」を選んでください。`, true);
+            return false;
+          }
+          console.error(`プロジェクトフォルダーとの連携に失敗しました（${connectionStage}）。`, error);
+          showCreatorStatus(`${connectionStage}に失敗しました。${error.message || "ブラウザーの許可設定を確認してください。"}`, true);
+          return false;
+        }
+      }
+
+      async function restoreProjectSongs() {
+        try {
+          const savedDirectory = await getSavedProjectDirectory();
+          if (savedDirectory && await savedDirectory.queryPermission({ mode: "readwrite" }) === "granted") {
+            projectDirectoryHandle = savedDirectory;
+          }
+        } catch (error) {
+          console.warn("連携済みのプロジェクトフォルダーを確認できませんでした。", error);
+        }
+
+        let restoredSongs = null;
+        let authoritative = false;
+        try {
+          if (window.location.protocol === "file:") throw new Error("ファイルから直接開いています。");
+          const response = await fetch("./assets/data/custom-charts.json", { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const pack = await response.json();
+          restoredSongs = validateChartPack(pack, true);
+          authoritative = typeof pack.updatedAt === "string";
+        } catch (fetchError) {
+          try {
+            if (!projectDirectoryHandle) return;
+            const projectFile = await readProjectSongs(projectDirectoryHandle);
+            restoredSongs = projectFile.songs;
+            authoritative = projectFile.authoritative;
+          } catch (error) {
+            console.warn("プロジェクトの譜面ファイルを読み込めませんでした。", error);
+            return;
+          }
+        }
+        if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
+        const mergedSongs = mergeMakerSongs(restoredSongs, authoritative);
+        if (!persistMakerSongs(mergedSongs)) return;
+        applyMakerSongs(mergedSongs);
+      }
+
+      function exportCreatorSongs() {
+        try {
+          const songs = Object.entries(songNames).map(([id, name]) => ({
+            id,
+            name,
+            bpm: charts[id].bpm,
+            keySignature: charts[id].keySignature || "C",
+            source: chartToSource(charts[id])
+          }));
+          const pack = { ...createChartPack(songs), exportedAt: new Date().toISOString() };
+          const blob = new Blob([JSON.stringify(pack, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `otoiro-songs-${new Date().toISOString().slice(0, 10)}.json`;
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showCreatorStatus(`${songs.length}曲をJSONファイルに書き出しました。`);
+        } catch (error) {
+          console.error("譜面データを書き出せませんでした。", error);
+          showCreatorStatus("書き出しに失敗しました。ブラウザーのダウンロード設定をご確認ください。", true);
+        }
+      }
+
+      async function exportPortableApp() {
+        if (window.location.protocol === "file:") {
+          showCreatorStatus("スマホ用アプリの書き出しは、PCでLive Serverを開いて実行してください。書き出した後はPCのサーバーなしで遊べます。", true);
+          return;
+        }
+        exportMobileAppButton.disabled = true;
+        try {
+          const [styleResponse, scriptResponse] = await Promise.all([
+            fetch("./assets/css/style.css", { cache: "no-store" }),
+            fetch("./assets/js/game.js", { cache: "no-store" })
+          ]);
+          if (!styleResponse.ok || !scriptResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText] = await Promise.all([styleResponse.text(), scriptResponse.text()]);
+          const songs = Object.entries(songNames).map(([id, name]) => ({
+            id,
+            name,
+            bpm: charts[id].bpm,
+            keySignature: charts[id].keySignature || "C",
+            source: chartToSource(charts[id])
+          }));
+          const pack = createChartPack(songs);
+          const portableDocument = document.documentElement.cloneNode(true);
+          portableDocument.querySelectorAll('link[rel="manifest"], link[rel="icon"], link[rel="apple-touch-icon"], link[rel="stylesheet"]').forEach((link) => link.remove());
+          portableDocument.querySelector("#connectProjectButton")?.remove();
+          portableDocument.querySelector("#exportMobileAppButton")?.remove();
+          portableDocument.querySelector(".project-folder-help")?.remove();
+          const portableStyle = document.createElement("style");
+          portableStyle.textContent = styleText.replace(/<\/style/gi, "<\\/style");
+          portableDocument.querySelector("head").append(portableStyle);
+          const oldScript = portableDocument.querySelector('script[src="assets/js/game.js"]');
+          const portableScript = document.createElement("script");
+          const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          oldScript.replaceWith(portableScript);
+          const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "otoiro-mobile.html";
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+          showCreatorStatus(`${songs.length}曲を含むスマホ用アプリを書き出しました。HTMLファイルをスマホへ送り、ブラウザーで開いてください。`);
+        } catch (error) {
+          console.error("スマホ用アプリを書き出せませんでした。", error);
+          showCreatorStatus(`スマホ用アプリを書き出せませんでした。${error.message}`, true);
+        } finally {
+          exportMobileAppButton.disabled = false;
+        }
+      }
+
+      async function importCreatorSongs(file) {
+        if (file.size > 2 * 1024 * 1024) {
+          showCreatorStatus("ファイルサイズが大きすぎます（上限2MB）。", true);
+          return;
+        }
+        let pack;
+        try {
+          pack = JSON.parse(await file.text());
+        } catch (error) {
+          console.error("譜面ファイルを読み取れませんでした。", error);
+          showCreatorStatus("JSONファイルを読み取れません。ファイル形式を確認してください。", true);
+          return;
+        }
+        let imported;
+        try {
+          imported = validateChartPack(pack);
+        } catch (error) {
+          showCreatorStatus(`読み込みを中止しました。${error.message}`, true);
+          return;
+        }
+
+        const existingIds = new Set(makerSongs.map((song) => song.id));
+        const conflicts = imported.filter((song) => existingIds.has(song.id)).length;
+        const prompt = `${imported.length}曲を読み込みます。${conflicts ? `\n同じIDの${conflicts}曲はファイルの内容で上書きします。` : ""}\n現在の譜面と統合しますか？`;
+        if (!window.confirm(prompt)) {
+          showCreatorStatus("読み込みをキャンセルしました。");
+          return;
+        }
+
+        const importedIds = new Set(imported.map((song) => song.id));
+        const mergedSongs = [...makerSongs.filter((song) => !importedIds.has(song.id)), ...imported];
+        if (!persistMakerSongs(mergedSongs)) return;
+        applyMakerSongs(mergedSongs);
+        syncProjectSongs(mergedSongs);
+        showCreatorStatus(`${imported.length}曲を読み込みました。${conflicts ? ` ${conflicts}曲を上書きしました。` : ""} 編集中の内容は保持されています。`);
+      }
+
+      function refreshSongOptions(selectedId = songSelect.value) {
+        songSelect.replaceChildren();
+        for (const [id, name] of Object.entries(songNames)) {
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = name;
+          songSelect.append(option);
+        }
+        songSelect.value = songNames[selectedId] ? selectedId : "twinkle";
+        chart = charts[songSelect.value];
+        updateReadyBpm();
+      }
+
+      function restoreMakerSongs() {
+        let stored;
+        try {
+          const raw = localStorage.getItem(makerStorageKey) || (window.OTOIRO_EMBEDDED_CHARTS ? JSON.stringify(window.OTOIRO_EMBEDDED_CHARTS.songs) : null);
+          if (!raw) return;
+          stored = JSON.parse(raw);
+        } catch (error) {
+          console.error("保存された譜面を読み込めませんでした。", error);
+          showCreatorStatus("保存された譜面を読み込めませんでした。製作者モードで再保存してください。", true);
+          return;
+        }
+        if (!Array.isArray(stored)) {
+          showCreatorStatus("保存された譜面データの形式が正しくありません。", true);
+          return;
+        }
+        const restored = [];
+        for (const song of stored) {
+          if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
+          if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
+          try {
+            const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature);
+            restored.push({ id: song.id, name: restoredChart.name, bpm: restoredChart.bpm, keySignature: restoredChart.keySignature, source: chartToSource(restoredChart) });
+            charts[song.id] = { bpm: restoredChart.bpm, steps: restoredChart.steps, directLanes: true, keySignature: restoredChart.keySignature };
+            songNames[song.id] = restoredChart.name;
+          } catch (error) {
+            console.warn(`譜面「${song.name}」を読み込めませんでした。`, error);
+          }
+        }
+        makerSongs = restored;
+        if (JSON.stringify(stored) !== JSON.stringify(restored)) persistMakerSongs(restored);
+        refreshSongOptions();
+      }
+
+      function loadSelectedSongIntoEditor() {
+        const id = songSelect.value;
+        const selectedChart = charts[id];
+        if (!selectedChart) {
+          showCreatorStatus("選択中の曲を読み込めませんでした。", true);
+          return;
+        }
+        creatorNameInput.value = id in builtInSongNames
+          ? songNames[id].replace(/ — やさしい$/, "")
+          : songNames[id];
+        creatorBpmInput.value = String(selectedChart.bpm);
+        creatorKeySignatureInput.value = selectedChart.keySignature || "C";
+        creatorChartInput.value = chartToSource(selectedChart);
+        renderSheetPreview();
+        deleteChartButton.hidden = !id.startsWith("user-");
+        showCreatorStatus(`「${songNames[id]}」を読み込みました。`);
+      }
+
+      async function saveCreatorSong(isNew) {
+        const selectedId = songSelect.value;
+        const id = isNew
+          ? `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+          : selectedId;
+        let validated;
+        try {
+          validated = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
+        } catch (error) {
+          showCreatorStatus(error.message, true);
+          return;
+        }
+        const song = { id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated) };
+        const updatedSongs = makerSongs.filter((item) => item.id !== id);
+        updatedSongs.push(song);
+        if (!persistMakerSongs(updatedSongs)) return;
+        makerSongs = updatedSongs;
+        charts[id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature };
+        songNames[id] = validated.name;
+        refreshSongOptions(id);
+        loadSelectedSongIntoEditor();
+        const synced = projectDirectoryHandle
+          ? await syncProjectSongs(updatedSongs)
+          : await connectProjectFolder();
+        if (synced) {
+          showCreatorStatus(`「${validated.name}」をプロジェクトに保存しました。スマートフォンでページを再読み込みするとプレイできます。`);
+        } else if (!projectDirectoryHandle) {
+          showCreatorStatus(`「${validated.name}」はこのブラウザーに保存しました。スマートフォンでもプレイするにはプロジェクトフォルダーとの連携が必要です。`, true);
+        }
+      }
+
+      async function removeSelectedCreatorSong() {
+        const id = songSelect.value;
+        if (!id.startsWith("user-")) return;
+        if (!window.confirm(`「${songNames[id]}」を削除しますか？`)) return;
+        const updatedSongs = makerSongs.filter((song) => song.id !== id);
+        if (!persistMakerSongs(updatedSongs)) return;
+        makerSongs = updatedSongs;
+        delete charts[id];
+        delete songNames[id];
+        refreshSongOptions("twinkle");
+        loadSelectedSongIntoEditor();
+        const synced = projectDirectoryHandle
+          ? await syncProjectSongs(updatedSongs)
+          : await connectProjectFolder();
+        if (synced) showCreatorStatus("自作曲を削除し、プロジェクトファイルにも反映しました。");
+        else if (!projectDirectoryHandle) showCreatorStatus("自作曲はこのブラウザーから削除しました。プロジェクトファイルへの反映には連携が必要です。", true);
+      }
+
+      restoreMakerSongs();
+      loadSelectedSongIntoEditor();
+      restoreProjectSongs();
+
+      function loadSettings() {
+        try {
+          const stored = JSON.parse(localStorage.getItem(settingsStorageKey) || "{}");
+          const validNumber = (value, min, max, fallback) => Number.isFinite(value) && value >= min && value <= max ? value : fallback;
+          return {
+            volume: validNumber(stored.volume, 0, 100, settingsDefaults.volume),
+            noteSpeed: validNumber(stored.noteSpeed, 50, 150, settingsDefaults.noteSpeed),
+            practiceTempo: validNumber(stored.practiceTempo, 50, 150, settingsDefaults.practiceTempo),
+            practiceMode: typeof stored.practiceMode === "boolean" ? stored.practiceMode : settingsDefaults.practiceMode,
+            keyColorPreset: Object.prototype.hasOwnProperty.call(keyColorPresetHints, stored.keyColorPreset) ? stored.keyColorPreset : settingsDefaults.keyColorPreset
+          };
+        } catch (error) {
+          console.warn("設定を読み込めませんでした。初期設定を使用します。", error);
+          return { ...settingsDefaults };
+        }
+      }
+
+      function saveSettings() {
+        try {
+          localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
+        } catch (error) {
+          console.warn("設定を保存できませんでした。", error);
+        }
+      }
+
+      function syncSettingsUI() {
+        for (const name of Object.keys(settingInputs)) {
+          settingInputs[name].value = String(settings[name]);
+          settingOutputs[name].value = `${settings[name]}%`;
+          settingOutputs[name].textContent = `${settings[name]}%`;
+        }
+        practiceModeInput.checked = settings.practiceMode;
+        practiceTempoSetting.hidden = !settings.practiceMode;
+        practiceStartControl.hidden = !settings.practiceMode;
+      }
+
+      syncSettingsUI();
+      updateReadyBpm();
+      for (const [name, input] of Object.entries(settingInputs)) {
+        input.addEventListener("input", () => {
+          settings[name] = Number(input.value);
+          settingOutputs[name].value = `${settings[name]}%`;
+          settingOutputs[name].textContent = `${settings[name]}%`;
+          saveSettings();
+          if (name === "practiceTempo") updateReadyBpm();
+        });
+      }
+      practiceModeInput.addEventListener("change", () => {
+        settings.practiceMode = practiceModeInput.checked;
+        practiceTempoSetting.hidden = !settings.practiceMode;
+        practiceStartControl.hidden = !settings.practiceMode;
+        saveSettings();
+        updateReadyBpm();
+      });
+
+      function updateReadyBpm() {
+        const tempoScale = practiceModeInput.checked ? 100 / settings.practiceTempo : 1;
+        document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / tempoScale)}`;
+      }
+
+      notes.forEach((note, index) => {
+        const label = document.createElement("div");
+        label.className = "track-label";
+        label.innerHTML = `<span>${note.name}<sub>${note.octave}</sub></span><em>${note.side === "center" ? "C" : note.side === "left" ? "L" : "R"}</em>`;
+        document.getElementById("trackLabels").append(label);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "key";
+        button.dataset.note = `${note.name}${note.octave}`;
+        button.dataset.side = note.side;
+        button.style.setProperty("--key-shortening", `${note.semitones * 0.38}px`);
+        button.setAttribute("aria-label", `${note.name}${note.octave}を鳴らす${note.side === "left" ? "、左手側" : note.side === "right" ? "、右手側" : "、中央"} (${note.key.toUpperCase()}キー)`);
+        button.innerHTML = `<span class="key-note">${note.name}${note.octave}</span><span class="key-shortcut">${note.key.toUpperCase()}</span>`;
+        keyRow.append(button);
+      });
+      const keyButtons = [...keyRow.children];
+
+      function getKeyMarkerColor(note, index, preset) {
+        const red = "#cb4747", blue = "#3978c6";
+        switch (preset) {
+          case "alternating": return index % 2 === 0 ? red : blue;
+          case "everyOther": return index % 2 === 0 ? red : null;
+          case "cOnly": return note.name === "C" ? red : null;
+          case "cAndF": return note.name === "C" ? red : note.name === "F" ? blue : null;
+          case "hands": return note.side === "left" ? blue : note.side === "right" ? "#d58025" : "#318663";
+          case "noteNames": return { C: red, D: "#d58025", E: "#b18b15", F: "#318663", G: blue, A: "#8057b3", B: "#bd5689" }[note.name];
+          default: return null;
+        }
+      }
+
+      function applyKeyColorPreset() {
+        const preset = settings.keyColorPreset;
+        document.getElementById("keyColorPreset").value = preset;
+        document.getElementById("keyColorHelp").textContent = keyColorPresetHints[preset];
+        const preview = document.getElementById("keyColorPreview");
+        preview.replaceChildren();
+        keyButtons.forEach((button, index) => {
+          const note = notes[index];
+          const color = getKeyMarkerColor(note, index, preset);
+          button.classList.toggle("has-color-marker", Boolean(color));
+          if (color) button.style.setProperty("--marker-color", color);
+          else button.style.removeProperty("--marker-color");
+          const sample = document.createElement("span");
+          sample.innerHTML = `${note.name}<small>${note.octave}</small>`;
+          sample.title = `${note.name}${note.octave}${color ? "：色マークあり" : "：色マークなし"}`;
+          if (color) sample.style.setProperty("--marker-color", color);
+          preview.append(sample);
+        });
+      }
+
+      applyKeyColorPreset();
+      document.getElementById("keyColorPreset").addEventListener("change", (event) => {
+        if (!Object.prototype.hasOwnProperty.call(keyColorPresetHints, event.target.value)) return;
+        settings.keyColorPreset = event.target.value;
+        applyKeyColorPreset();
+        saveSettings();
+      });
+      function loadFreeTuning() {
+        const defaults = { mode: "signature", signature: "C", tonic: 0, offsets: Array(notes.length).fill(0) };
+        try {
+          const stored = JSON.parse(localStorage.getItem(freeTuningStorageKey) || "{}");
+          return {
+            mode: ["signature", "tonic", "custom"].includes(stored.mode) ? stored.mode : defaults.mode,
+            signature: freeSignatures.some((entry) => entry.id === stored.signature) ? stored.signature : "C",
+            tonic: Number.isInteger(stored.tonic) && stored.tonic >= -12 && stored.tonic <= 11 ? stored.tonic : 0,
+            offsets: notes.map((_, index) => {
+              const value = Array.isArray(stored.offsets) ? stored.offsets[index] : 0;
+              return Number.isInteger(value) && value >= -12 && value <= 12 ? value : 0;
+            })
+          };
+        } catch (error) {
+          return defaults;
+        }
+      }
+
+      function getSignatureNote(lane, signature = "C") {
+        const base = notes[lane];
+        const fifths = (freeSignatures.find((entry) => entry.id === signature) || freeSignatures[0]).fifths;
+        const order = fifths >= 0 ? ["F", "C", "G", "D", "A", "E", "B"] : ["B", "E", "A", "D", "G", "C", "F"];
+        const offset = order.slice(0, Math.abs(fifths)).includes(base.name) ? Math.sign(fifths) : 0;
+        const accidental = offset > 0 ? "♯" : offset < 0 ? "♭" : "";
+        const semitones = base.semitones + offset;
+        return { ...base, accidental, semitones, displayName: `${base.name}${accidental}${base.octave}`, frequency: 261.625565 * 2 ** (semitones / 12) };
+      }
+
+      function getFreeNote(lane) {
+        if (freeTuning.mode === "signature") return getSignatureNote(lane, freeTuning.signature);
+        const base = notes[lane];
+        const offset = freeTuning.mode === "tonic" ? freeTuning.tonic : freeTuning.offsets[lane];
+        const midi = 60 + base.semitones + offset;
+        const pitchName = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][((midi % 12) + 12) % 12];
+        const name = pitchName[0];
+        const accidental = pitchName.slice(1);
+        const octave = Math.floor(midi / 12) - 1;
+        const semitones = base.semitones + offset;
+        return { ...base, name, octave, accidental, semitones, displayName: `${name}${accidental}${octave}`, frequency: 261.625565 * 2 ** (semitones / 12) };
+      }
+
+      function updateKeyLabels() {
+        keyButtons.forEach((button, lane) => {
+          const base = notes[lane];
+          const signature = isRecording ? creatorKeySignatureInput.value : state === "playing" || state === "paused" ? chart.keySignature : "C";
+          const label = state === "free" ? getFreeNote(lane).displayName : getSignatureNote(lane, signature).displayName;
+          button.querySelector(".key-note").textContent = label;
+          button.classList.toggle("has-accidental", label.includes("♯") || label.includes("♭"));
+          button.dataset.note = label;
+          button.setAttribute("aria-label", `${label}を鳴らす、${base.side === "left" ? "左手側" : base.side === "right" ? "右手側" : "中央"} (${base.key.toUpperCase()}キー)`);
+        });
+        keyRow.setAttribute("aria-label", "17鍵カリンバ。各鍵盤に実際に鳴る音名を表示しています");
+      }
+
+      function renderFreeTuning() {
+        document.getElementById("freeTuningMode").value = freeTuning.mode;
+        document.getElementById("freeSignature").value = freeTuning.signature;
+        document.getElementById("freeTonic").value = String(freeTuning.tonic);
+        document.getElementById("freeSignatureControl").hidden = freeTuning.mode !== "signature";
+        document.getElementById("freeTonicControl").hidden = freeTuning.mode !== "tonic";
+        document.getElementById("freeCustomControl").hidden = freeTuning.mode !== "custom";
+        document.getElementById("freeTuningHelp").textContent = {
+          signature: "ドレミの配置を保ち、調号に該当する音だけを半音変えます。例：ト長調ではファがすべてファ♯になります。",
+          tonic: "中央のC4を選んだ音へ移し、すべての鍵盤を同じ半音数だけ上下します。音の間隔はそのままです。",
+          custom: "C調の元の音を基準に、各鍵盤を個別に調整します。音名は変更後の音です。"
+        }[freeTuning.mode];
+        const tuned = notes.map((_, lane) => getFreeNote(lane));
+        const lowest = tuned.reduce((a, b) => a.semitones <= b.semitones ? a : b);
+        document.getElementById("freeTuningSummary").textContent = `フリー演奏に適用：中央 ${tuned[8].displayName} ／ 最低音 ${lowest.displayName}`;
+        document.querySelectorAll(".free-custom-key").forEach((card, lane) => {
+          const base = notes[lane];
+          const offset = freeTuning.offsets[lane];
+          const midi = 60 + base.semitones + offset;
+          const label = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+          card.querySelector("output").textContent = label;
+          card.querySelector("[data-direction='-1']").disabled = offset <= -12;
+          card.querySelector("[data-direction='1']").disabled = offset >= 12;
+        });
+        updateKeyLabels();
+      }
+
+      function changeFreeTuning() {
+        clearPointerInteraction();
+        renderFreeTuning();
+        if (state === "free") document.getElementById("freePlayNote").textContent = "♪";
+        try {
+          localStorage.setItem(freeTuningStorageKey, JSON.stringify(freeTuning));
+        } catch (error) {
+          console.warn("フリー演奏の調設定を保存できませんでした。", error);
+        }
+      }
+
+      function initFreeTuning() {
+        const signatures = document.getElementById("freeSignature");
+        freeSignatures.forEach((entry) => {
+          const option = document.createElement("option");
+          option.value = entry.id;
+          option.textContent = entry.label;
+          signatures.append(option);
+        });
+        const tonicSelect = document.getElementById("freeTonic");
+        for (let offset = -12; offset <= 11; offset++) {
+          const option = document.createElement("option");
+          const midi = 60 + offset;
+          option.value = String(offset);
+          option.textContent = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][midi % 12] + (Math.floor(midi / 12) - 1);
+          tonicSelect.append(option);
+        }
+        const customKeys = document.getElementById("freeCustomKeys");
+        notes.forEach((note, lane) => {
+          const card = document.createElement("div");
+          card.className = "free-custom-key";
+          const label = `${note.name}${note.octave}`;
+          card.innerHTML = `<span>元の鍵盤：${label}</span><div><button type="button" data-lane="${lane}" data-direction="-1" aria-label="${label}を半音下げる">−</button><output></output><button type="button" data-lane="${lane}" data-direction="1" aria-label="${label}を半音上げる">＋</button></div>`;
+          customKeys.append(card);
+        });
+        document.getElementById("freeTuningMode").addEventListener("change", (event) => {
+          freeTuning.mode = event.target.value;
+          changeFreeTuning();
+        });
+        signatures.addEventListener("change", (event) => {
+          freeTuning.signature = event.target.value;
+          changeFreeTuning();
+        });
+        tonicSelect.addEventListener("change", (event) => {
+          freeTuning.tonic = Number(event.target.value);
+          changeFreeTuning();
+        });
+        customKeys.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-lane]");
+          if (!button || button.disabled) return;
+          const lane = Number(button.dataset.lane);
+          freeTuning.offsets[lane] = Math.max(-12, Math.min(12, freeTuning.offsets[lane] + Number(button.dataset.direction)));
+          changeFreeTuning();
+          if (state === "free") playKey(lane);
+        });
+        document.getElementById("freeTuningReset").addEventListener("click", () => {
+          freeTuning.mode = "signature";
+          freeTuning.signature = "C";
+          freeTuning.tonic = 0;
+          freeTuning.offsets.fill(0);
+          changeFreeTuning();
+        });
+        renderFreeTuning();
+      }
+
+      const activePointers = new Map();
+      initFreeTuning();
+
+      function playKey(index) {
+        if (isRecording) recordKeyPress(index);
+        else if (state === "free") {
+          playTone(index);
+          keyButtons[index].classList.add("pressed");
+          window.setTimeout(() => keyButtons[index].classList.remove("pressed"), 105);
+          const createdAt = performance.now();
+          effects.push({ lane: index, createdAt });
+          freeNotes.push({ lane: index, createdAt });
+          document.getElementById("freePlayNote").textContent = getFreeNote(index).displayName;
+        }
+        else if (state === "playing") hit(index);
+        else playTone(index);
+      }
+
+      function updatePressedKey(index) {
+        keyButtons[index].classList.toggle(
+          "pressed",
+          [...activePointers.values()].includes(index)
+        );
+      }
+
+      function clearPointerInteraction() {
+        activePointers.clear();
+        keyButtons.forEach((button) => button.classList.remove("pressed"));
+      }
+
+      function movePointerToKey(pointerId, index) {
+        if (!activePointers.has(pointerId)) return;
+        const previousIndex = activePointers.get(pointerId);
+        if (previousIndex === index) return;
+        if (previousIndex >= 0) {
+          activePointers.set(pointerId, index);
+          updatePressedKey(previousIndex);
+        }
+        if (index < 0) {
+          activePointers.set(pointerId, -1);
+          return;
+        }
+        activePointers.set(pointerId, index);
+        updatePressedKey(index);
+        playKey(index);
+      }
+
+      keyRow.addEventListener("pointerdown", (event) => {
+        const key = event.target instanceof Element ? event.target.closest(".key") : null;
+        if (!key || activePointers.has(event.pointerId)) return;
+        event.preventDefault();
+        activePointers.set(event.pointerId, -1);
+        keyRow.setPointerCapture(event.pointerId);
+        movePointerToKey(event.pointerId, keyButtons.indexOf(key));
+      });
+      window.addEventListener("pointermove", (event) => {
+        if (!activePointers.has(event.pointerId)) return;
+        const target = document.elementFromPoint(event.clientX, event.clientY);
+        const key = target instanceof Element ? target.closest(".key") : null;
+        movePointerToKey(event.pointerId, key && keyRow.contains(key) ? keyButtons.indexOf(key) : -1);
+      });
+      window.addEventListener("pointerup", (event) => {
+        const index = activePointers.get(event.pointerId);
+        if (index === undefined) return;
+        activePointers.delete(event.pointerId);
+        if (index >= 0) updatePressedKey(index);
+      });
+      window.addEventListener("pointercancel", (event) => {
+        const index = activePointers.get(event.pointerId);
+        if (index === undefined) return;
+        activePointers.delete(event.pointerId);
+        if (index >= 0) updatePressedKey(index);
+      });
+      keyRow.addEventListener("lostpointercapture", (event) => {
+        const index = activePointers.get(event.pointerId);
+        activePointers.delete(event.pointerId);
+        if (index >= 0) updatePressedKey(index);
+      });
+      window.addEventListener("blur", clearPointerInteraction);
+
+      function resizeCanvas() {
+        const rect = playfield.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(rect.width * ratio);
+        canvas.height = Math.round(rect.height * ratio);
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        if (app.classList.contains("is-playing")) {
+          const fieldTop = rect.top;
+          const keyboardTop = keyRow.getBoundingClientRect().top;
+          hitLine = Math.max(40, Math.min(rect.height - 12, keyboardTop - fieldTop - 7));
+        } else {
+          hitLine = rect.height - Math.min(46, Math.max(34, rect.height * .11));
+        }
+        draw(performance.now());
+      }
+
+      function getGeometry() {
+        const width = playfield.clientWidth;
+        const vanishingPoint = width / 2;
+        const fieldRect = playfield.getBoundingClientRect();
+        const keyRects = keyButtons.map((button) => button.getBoundingClientRect());
+        const nearCenters = keyRects.map((rect) => rect.left - fieldRect.left + rect.width / 2);
+        const farCenters = nearCenters.map((x) => vanishingPoint + (x - vanishingPoint) * .22);
+        const depthCenters = (centers, index) => {
+          const before = index === 0 ? centers[0] - (centers[1] - centers[0]) / 2 : (centers[index - 1] + centers[index]) / 2;
+          const after = index === laneCount - 1 ? centers[index] + (centers[index] - centers[index - 1]) / 2 : (centers[index] + centers[index + 1]) / 2;
+          return { left: before, right: after };
+        };
+        return {
+          width,
+          lanePoint: (index, depth) => ({
+            x: farCenters[index] + (nearCenters[index] - farCenters[index]) * depth,
+            y: 24 + (hitLine - 24) * depth
+          }),
+          laneBounds: (index, depth) => {
+            const near = depthCenters(nearCenters, index);
+            const far = depthCenters(farCenters, index);
+            return {
+              left: near.left + (far.left - near.left) * depth,
+              right: near.right + (far.right - near.right) * depth
+            };
+          }
+        };
+      }
+
+      function draw(now) {
+        const width = playfield.clientWidth;
+        const height = playfield.clientHeight;
+        if (!width || !height) return;
+        const renderTime = state === "paused" ? pausedAt : practiceHoldAt ?? now;
+        ctx.clearRect(0, 0, width, height);
+        const geometry = getGeometry();
+
+        for (let i = 0; i < laneCount; i++) {
+          const bottom = geometry.laneBounds(i, 0);
+          const top = geometry.laneBounds(i, 1);
+          ctx.beginPath();
+          ctx.moveTo(top.left, 24);
+          ctx.lineTo(top.right, 24);
+          ctx.lineTo(bottom.right, hitLine);
+          ctx.lineTo(bottom.left, hitLine);
+          ctx.closePath();
+          ctx.fillStyle = i % 2 ? "rgba(231,194,143,.018)" : "rgba(231,194,143,.032)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(231,194,143,.11)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(top.right, 24);
+          ctx.lineTo(bottom.right, hitLine);
+          ctx.stroke();
+        }
+
+        if (state !== "free") {
+          const pulse = state === "playing" ? (Math.sin(now / 170) + 1) * .5 : .22;
+          const leftEdge = geometry.laneBounds(0, 0).left;
+          const rightEdge = geometry.laneBounds(laneCount - 1, 0).right;
+          const lineGradient = ctx.createLinearGradient(leftEdge, 0, rightEdge, 0);
+          lineGradient.addColorStop(0, `rgba(233,185,111,${.34 + pulse * .42})`);
+          lineGradient.addColorStop(.5, `rgba(233,185,111,${.34 + pulse * .42})`);
+          lineGradient.addColorStop(1, `rgba(233,185,111,${.34 + pulse * .42})`);
+          ctx.shadowBlur = 13 + pulse * 8;
+          ctx.shadowColor = "rgba(233,185,111,.85)";
+          ctx.fillStyle = lineGradient;
+          ctx.beginPath();
+          ctx.moveTo(geometry.laneBounds(0, 1).left, hitLine);
+          ctx.lineTo(geometry.laneBounds(laneCount - 1, 1).right, hitLine);
+          ctx.lineTo(rightEdge, hitLine + 4);
+          ctx.lineTo(leftEdge, hitLine + 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          for (const note of activeNotes) {
+            if (!note.spawned || note.hit || note.missed) continue;
+            const elapsed = (renderTime - startedAt) / 1000;
+            const approach = Math.min(1, Math.max(0, (elapsed - (note.time - runTravelTime)) / runTravelTime));
+            const depth = approach;
+            const { x, y } = geometry.lanePoint(note.lane, depth);
+            const laneBounds = geometry.laneBounds(note.lane, 1 - depth);
+            const radiusX = Math.max(3, (laneBounds.right - laneBounds.left) * .46);
+            const radiusY = radiusX * .48;
+            const color = notes[note.lane].color;
+            ctx.save();
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 4 + 12 * depth;
+            ctx.beginPath();
+            ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        if (state === "free") {
+          const lifetime = travelTime * 1000;
+          freeNotes = freeNotes.filter((note) => now - note.createdAt < lifetime);
+          for (const note of freeNotes) {
+            const progress = Math.max(0, Math.min(1, (now - note.createdAt) / lifetime));
+            const { x, y } = geometry.lanePoint(note.lane, 1 - progress);
+            const bounds = geometry.laneBounds(note.lane, progress);
+            const radiusX = Math.max(3, (bounds.right - bounds.left) * .46);
+            ctx.save();
+            ctx.globalAlpha = 1 - progress ** 3;
+            ctx.fillStyle = notes[note.lane].color;
+            ctx.shadowColor = notes[note.lane].color;
+            ctx.shadowBlur = 12 * (1 - progress);
+            ctx.beginPath();
+            ctx.ellipse(x, y, radiusX, radiusX * .48, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+
+        // Effects use real animation time, not the frozen practice timeline.
+        // A touch during a hold is newer than renderTime; subtracting that
+        // timestamp could otherwise give arc() a negative radius and stop draw().
+        effects = effects.filter((effect) => now - effect.createdAt < 420);
+        for (const effect of effects) {
+          const progress = Math.max(0, Math.min(1, (now - effect.createdAt) / 420));
+          const alpha = 1 - progress;
+          const { x, y } = geometry.lanePoint(effect.lane, 1);
+          ctx.beginPath();
+          ctx.arc(x, y, 8 + progress * 25, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(233,185,111,${alpha * .72})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      function frame(now) {
+        // Keep the animation loop scheduled even if a drawing operation fails.
+        requestAnimationFrame(frame);
+        if (state === "playing") update();
+        draw(now);
+      }
+
+      function update() {
+        let elapsed = ((practiceHoldAt ?? performance.now()) - startedAt) / 1000;
+        const nextPracticeNotes = practiceMode
+          ? activeNotes.filter((note) => !note.hit && !note.missed && note.time <= elapsed)
+          : [];
+        const nextPracticeNote = nextPracticeNotes[0] ?? null;
+        if (nextPracticeNote && !practiceNote) {
+          practiceNote = nextPracticeNote;
+          practiceHoldAt = startedAt + practiceNote.time * 1000;
+          elapsed = practiceNote.time;
+          showToast("この音を弾こう", "good");
+          setNextNote();
+        }
+        for (const note of activeNotes) {
+          if (!note.spawned && elapsed >= note.time - runTravelTime) note.spawned = true;
+          if (!practiceMode && !note.hit && !note.missed && elapsed > note.time + .18) {
+            note.missed = true;
+            judged++;
+            combo = 0;
+            updateStats();
+            showToast("MISS", "miss");
+            setNextNote();
+          }
+        }
+        const lastTime = activeNotes[activeNotes.length - 1].time;
+        document.getElementById("progressFill").style.width = `${Math.min(100, elapsed / (lastTime + 2) * 100)}%`;
+        if (!practiceNote && elapsed > lastTime + 2.8) finishGame();
+      }
+
+      function handlePageVisibilityChange() {
+        if (document.hidden) {
+          clearPointerInteraction();
+          pauseGame();
+          stopRecording();
+          return;
+        }
+        if (state === "playing") {
+          const now = performance.now();
+          // Mobile browsers throttle animation frames while backgrounded.
+          // Freeze gameplay time across that gap, including a practice hold.
+          startedAt += now - pausedAt;
+          if (practiceHoldAt !== null) practiceHoldAt += now - pausedAt;
+          pausedAt = 0;
+          if (audioContext?.state === "suspended") audioContext.resume().catch(() => {});
+          resizeCanvas();
+          update();
+        }
+      }
+
+      function hit(lane) {
+        if (state !== "playing") return;
+        // Touch events can arrive before the next animation frame on a busy phone.
+        // Establish the wait before judging input, even when the note is overdue.
+        if (practiceMode) update();
+        const elapsed = ((practiceHoldAt ?? performance.now()) - startedAt) / 1000;
+        const practiceChord = practiceMode ? getNextChord() : [];
+        const candidate = activeNotes
+          .filter((note) => note.lane === lane && !note.hit && !note.missed)
+          .map((note) => ({ note, difference: Math.abs(note.time - elapsed) }))
+          .filter(({ note, difference }) => practiceMode
+            ? practiceChord.includes(note) && difference <= goodWindow
+            : difference <= goodWindow)
+          .sort((a, b) => a.note.time - b.note.time)[0];
+        playTone(lane);
+        keyButtons[lane].classList.add("pressed");
+        window.setTimeout(() => keyButtons[lane].classList.remove("pressed"), 105);
+        if (!candidate) return;
+
+        const { note, difference } = candidate;
+        const wasWaiting = practiceMode;
+        note.hit = true;
+        if (practiceMode && practiceHoldAt !== null) {
+          const next = practiceChord.find((pending) => !pending.hit && !pending.missed && pending.time <= elapsed);
+          if (next) {
+            practiceNote = next;
+          } else {
+            startedAt += performance.now() - practiceHoldAt;
+            practiceHoldAt = null;
+            practiceNote = null;
+          }
+        }
+        judged++;
+        combo++;
+        bestCombo = Math.max(bestCombo, combo);
+        const isPerfect = !wasWaiting && difference <= .085;
+        accuracyPoints += isPerfect ? 100 : 60;
+        score += isPerfect ? 1000 : 600;
+        effects.push({ lane, createdAt: performance.now() });
+        updateStats();
+        showToast(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "" : "good");
+        setNextNote();
+      }
+
+      function getKalimbaAudio() {
+        if (kalimbaAudio?.context === audioContext) return kalimbaAudio;
+        const input = audioContext.createGain();
+        const dry = audioContext.createGain();
+        const wet = audioContext.createGain();
+        const reverb = audioContext.createConvolver();
+        const warmth = audioContext.createBiquadFilter();
+        const limiter = audioContext.createDynamicsCompressor();
+        dry.gain.value = .95;
+        wet.gain.value = .18;
+        warmth.type = "lowpass";
+        warmth.frequency.value = 4200;
+        warmth.Q.value = .5;
+        limiter.threshold.value = -14;
+        limiter.knee.value = 18;
+        limiter.ratio.value = 4;
+        limiter.attack.value = .006;
+        limiter.release.value = .2;
+
+        // Build the resonant tail once, rather than one reverb per played note.
+        const rate = audioContext.sampleRate;
+        const impulse = audioContext.createBuffer(2, Math.ceil(rate * 1.6), rate);
+        for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+          const data = impulse.getChannelData(channel);
+          let smooth = 0;
+          for (let i = 0; i < data.length; i++) {
+            smooth = smooth * .6 + (Math.random() * 2 - 1) * .4;
+            const time = i / rate;
+            data[i] = smooth * Math.exp(-time * 4.5) * Math.min(1, time / .012);
+          }
+        }
+        reverb.buffer = impulse;
+        input.connect(dry).connect(limiter);
+        input.connect(reverb).connect(warmth).connect(wet).connect(limiter);
+        limiter.connect(audioContext.destination);
+
+        // A brief, quiet pluck gives the soft onset a little definition.
+        const pluck = audioContext.createBuffer(1, Math.ceil(rate * .016), rate);
+        const pluckData = pluck.getChannelData(0);
+        for (let i = 0; i < pluckData.length; i++) {
+          pluckData[i] = (Math.random() * 2 - 1) * Math.exp(-i / rate * 380);
+        }
+        kalimbaAudio = { context: audioContext, input, pluck };
+        return kalimbaAudio;
+      }
+
+      function playTone(lane, signature) {
+        try {
+          if (!audioContext || audioContext.state === "closed") audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state !== "running") audioContext.resume().catch((error) => console.warn("音声の再開に失敗しました。", error));
+          const voice = getKalimbaAudio();
+          const now = audioContext.currentTime;
+          const note = signature !== undefined ? getSignatureNote(lane, signature)
+            : state === "free" ? getFreeNote(lane)
+            : getSignatureNote(lane, isRecording ? creatorKeySignatureInput.value : state === "playing" ? chart.keySignature : "C");
+          const decay = Math.max(1.4, Math.min(4, 3.1 - note.semitones / 28 * .9));
+          const master = audioContext.createGain();
+          master.gain.value = .32 * settings.volume / 100;
+          master.connect(voice.input);
+          const partials = [
+            { ratio: 1, peak: .22, duration: decay },
+            { ratio: 2.76, peak: .055, duration: .65 },
+            { ratio: 5.4, peak: .022, duration: .24 },
+            { ratio: 8.93, peak: .009, duration: .10 }
+          ];
+          let remaining = 0;
+          for (const partial of partials) {
+            const frequency = note.frequency * partial.ratio;
+            if (frequency >= audioContext.sampleRate * .45) continue;
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.type = "sine";
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(.0001, now);
+            gain.gain.exponentialRampToValueAtTime(partial.peak, now + .003);
+            gain.gain.exponentialRampToValueAtTime(partial.peak * .5, now + partial.duration * .12);
+            gain.gain.exponentialRampToValueAtTime(.0001, now + partial.duration);
+            oscillator.connect(gain).connect(master);
+            remaining++;
+            oscillator.onended = () => {
+              oscillator.disconnect();
+              gain.disconnect();
+              if (--remaining === 0) master.disconnect();
+            };
+            oscillator.start(now);
+            oscillator.stop(now + partial.duration + .02);
+          }
+          const pluck = audioContext.createBufferSource();
+          const pluckGain = audioContext.createGain();
+          pluck.buffer = voice.pluck;
+          pluckGain.gain.value = .035;
+          pluck.connect(pluckGain).connect(master);
+          pluck.onended = () => { pluck.disconnect(); pluckGain.disconnect(); };
+          pluck.start(now);
+        } catch (error) {
+          console.warn("音声を再生できませんでした。ブラウザーの音声設定をご確認ください。", error);
+        }
+      }
+
+      function updateStats() {
+        document.getElementById("scoreValue").innerHTML = `${String(score).padStart(6, "0")} <span>pt</span>`;
+        document.getElementById("accuracyValue").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
+        document.getElementById("bestCombo").textContent = String(bestCombo);
+        document.getElementById("comboValue").textContent = String(combo);
+        document.getElementById("hudCombo").textContent = String(combo);
+      }
+
+      function getNextChord() {
+        const next = activeNotes.find((note) => !note.hit && !note.missed);
+        // Arpeggio offsets change playback time, but the original beat still
+        // identifies the chord whose remaining keys should light together.
+        return next
+          ? activeNotes.filter((note) => note.step === next.step && !note.hit && !note.missed)
+            .sort((a, b) => notes[a.lane].semitones - notes[b.lane].semitones)
+          : [];
+      }
+
+      function setNextNote() {
+        const chord = getNextChord();
+        const lanes = new Set(chord.map((note) => note.lane));
+        const keys = chord.map((note) => getSignatureNote(note.lane, chart.keySignature));
+        const key = keys[0];
+        const names = keys.map((note) => note.displayName).join("・");
+        document.getElementById("nextOrb").textContent = keys.length > 1 ? "和音" : key ? names : "♪";
+        document.getElementById("nextNote").textContent = key ? `${names} を弾こう` : "すべての音を演奏！";
+        document.getElementById("nextHint").textContent = key
+          ? keys.length > 1
+            ? "同じ拍の音をすべて光らせています"
+          : practiceMode
+            ? "正しい音を弾くと次へ進む"
+            : `${key.side === "left" ? "左手" : key.side === "right" ? "右手" : "中央"} · ${key.key.toUpperCase()} キー`
+          : "最後まであと少し";
+        keyButtons.forEach((button, index) => button.classList.toggle("next", lanes.has(index)));
+      }
+
+      function showToast(message, kind) {
+        toast.textContent = message;
+        toast.className = `toast show ${kind}`;
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => toast.classList.remove("show"), 420);
+      }
+
+      function getStartBeat(input, selectedChart) {
+        input.setCustomValidity("");
+        const startBeat = input.valueAsNumber;
+        if (!Number.isFinite(startBeat) || startBeat < 0 || startBeat > 10000 || input.validity.stepMismatch) {
+          input.reportValidity();
+          return null;
+        }
+        if (!selectedChart.steps.some(([step]) => step >= startBeat * 2)) {
+          input.setCustomValidity("開始拍以降に音がありません。開始拍を小さくしてください。");
+          input.reportValidity();
+          return null;
+        }
+        return startBeat;
+      }
+
+      function createActiveNotes(selectedChart, startBeat) {
+        const startStep = startBeat * 2;
+        const selectedSteps = selectedChart.steps.filter(([step]) => step >= startStep);
+        const { events } = getArpeggiatedEvents(selectedSteps, selectedChart.directLanes);
+        return events.map(({ step, lane, offset }) => ({
+            step,
+            time: runTravelTime + ((step - startStep) * (60 / selectedChart.bpm / 2) + offset) * runTempoScale,
+            lane,
+            spawned: false,
+            hit: false,
+            missed: false
+          })).sort((a, b) => a.time - b.time || notes[a.lane].semitones - notes[b.lane].semitones);
+      }
+
+      function startFreePlay() {
+        if (isRecording || (state !== "ready" && state !== "finished")) return;
+        stopPreview();
+        cancelSheetGesture();
+        clearPointerInteraction();
+        activeNotes = [];
+        freeNotes = [];
+        effects = [];
+        practiceHoldAt = null;
+        practiceNote = null;
+        practiceMode = false;
+        isTestPlay = false;
+        pausedAt = 0;
+        state = "free";
+        updateKeyLabels();
+        document.getElementById("freeTuningPanel").open = false;
+        selectionControls.forEach((control) => { control.disabled = true; });
+        keyButtons.forEach((button) => button.classList.remove("next"));
+        document.getElementById("gameStatus").textContent = "FREE PLAY";
+        document.getElementById("freePlayNote").textContent = "♪";
+        app.classList.add("is-playing", "is-free-play");
+        overlay.classList.add("hidden");
+        resizeCanvas();
+        document.getElementById("exitFreePlayButton").focus();
+      }
+
+      function startGame() {
+        if (state === "free" || isRecording) return;
+        if (state === "paused") {
+          const now = performance.now();
+          const pauseDuration = now - pausedAt;
+          startedAt += pauseDuration;
+          if (practiceHoldAt !== null) practiceHoldAt += pauseDuration;
+          state = "playing";
+          app.classList.add("is-playing");
+          resizeCanvas();
+          document.getElementById("gameStatus").textContent = isTestPlay ? "TEST PLAY" : practiceMode ? "PRACTICE" : "PLAYING";
+          overlay.classList.add("hidden");
+          return;
+        }
+        if (audioContext && audioContext.state === "suspended") audioContext.resume();
+        chart = charts[document.getElementById("songSelect").value];
+        practiceMode = practiceModeInput.checked;
+        const startBeat = practiceMode ? getStartBeat(practiceStartBeatInput, chart) : 0;
+        if (startBeat === null) return;
+        runTravelTime = travelTime * 100 / settings.noteSpeed;
+        runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
+        activeNotes = createActiveNotes(chart, startBeat);
+        practiceHoldAt = null;
+        practiceNote = null;
+        selectionControls.forEach((control) => { control.disabled = true; });
+        document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / runTempoScale)}`;
+        effects = [];
+        score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
+        updateStats();
+        startedAt = performance.now();
+        state = "playing";
+        app.classList.add("is-playing");
+        updateKeyLabels();
+        resizeCanvas();
+        document.getElementById("gameStatus").textContent = practiceMode ? "PRACTICE" : "PLAYING";
+        document.getElementById("overlayTitle").textContent = "準備はいい？";
+        document.getElementById("overlayCopy").innerHTML = "画面の音階キーをタップして演奏。<br>ノーツが判定ラインに重なる瞬間がチャンス。";
+        document.getElementById("startButton").textContent = "演奏をはじめる";
+        overlay.classList.add("hidden");
+        setNextNote();
+      }
+
+      function startTestPlay() {
+        if (state !== "ready" && state !== "finished") return;
+        let testChart;
+        try {
+          testChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
+        } catch (error) {
+          showCreatorStatus(error.message, true);
+          return;
+        }
+        const startBeat = getStartBeat(testStartBeatInput, testChart);
+        if (startBeat === null) return;
+        stopPreview();
+        chart = { bpm: testChart.bpm, steps: testChart.steps, directLanes: true, keySignature: testChart.keySignature };
+        practiceMode = practiceModeInput.checked;
+        runTravelTime = travelTime * 100 / settings.noteSpeed;
+        runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
+        practiceHoldAt = null;
+        practiceNote = null;
+        isTestPlay = true;
+        selectionControls.forEach((control) => { control.disabled = true; });
+        activeNotes = createActiveNotes(chart, startBeat);
+        effects = [];
+        score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
+        updateStats();
+        startedAt = performance.now();
+        state = "playing";
+        app.classList.add("is-playing");
+        updateKeyLabels();
+        resizeCanvas();
+        document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / runTempoScale)}`;
+        document.getElementById("gameStatus").textContent = "TEST PLAY";
+        document.getElementById("overlayTitle").textContent = "譜面をテスト中";
+        document.getElementById("overlayCopy").textContent = "編集中の譜面を再生しています。";
+        document.getElementById("startButton").textContent = "演奏をはじめる";
+        overlay.classList.add("hidden");
+        setNextNote();
+        showCreatorStatus(`「${testChart.name}」をテストプレイ中です。`);
+      }
+
+      function returnFromTestPlay(message) {
+        document.getElementById("freePlayButton").hidden = false;
+        state = "ready";
+        isTestPlay = false;
+        activeNotes = [];
+        effects = [];
+        practiceHoldAt = null;
+        practiceNote = null;
+        pausedAt = 0;
+        chart = charts[songSelect.value];
+        updateKeyLabels();
+        selectionControls.forEach((control) => { control.disabled = false; });
+        clearPointerInteraction();
+        app.classList.remove("is-playing");
+        document.getElementById("gameStatus").textContent = "READY";
+        document.getElementById("overlayTitle").textContent = "テストプレイ終了";
+        document.getElementById("overlayCopy").textContent = "譜面を編集して、もう一度テストできます。";
+        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("stopButton").hidden = true;
+        document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("nextOrb").textContent = "—";
+        document.getElementById("nextNote").textContent = "曲を選んでスタート";
+        document.getElementById("nextHint").textContent = "キーを押すタイミングを確認";
+        keyButtons.forEach((button) => button.classList.remove("next"));
+        overlay.classList.remove("hidden");
+        resizeCanvas();
+        showCreatorStatus(message);
+      }
+
+      function pauseGame() {
+        if (state !== "playing") return;
+        document.getElementById("freePlayButton").hidden = true;
+        clearPointerInteraction();
+        pausedAt = performance.now();
+        state = "paused";
+        app.classList.remove("is-playing");
+        resizeCanvas();
+        document.getElementById("gameStatus").textContent = "PAUSED";
+        document.getElementById("overlayTitle").textContent = "一時停止中";
+        document.getElementById("overlayCopy").textContent = isTestPlay
+          ? "編集画面に戻るときは、テストを終了してください。"
+          : "戻ってきたら再開ボタンを押してね。";
+        document.getElementById("startButton").textContent = "演奏を再開";
+        document.getElementById("stopButton").textContent = isTestPlay ? "テストを終了" : "演奏をやめる";
+        document.getElementById("stopButton").hidden = false;
+        overlay.classList.remove("hidden");
+      }
+
+      function stopGame() {
+        if (state !== "paused" && state !== "free") return;
+        if (isTestPlay) {
+          returnFromTestPlay("テストプレイを終了しました。譜面は保存されていません。");
+          return;
+        }
+        state = "ready";
+        activeNotes = [];
+        freeNotes = [];
+        effects = [];
+        practiceHoldAt = null;
+        practiceNote = null;
+        pausedAt = 0;
+        selectionControls.forEach((control) => { control.disabled = false; });
+        clearPointerInteraction();
+        app.classList.remove("is-playing", "is-free-play");
+        updateKeyLabels();
+        document.getElementById("freePlayButton").hidden = false;
+        document.getElementById("gameStatus").textContent = "READY";
+        document.getElementById("overlayTitle").textContent = "準備はいい？";
+        document.getElementById("overlayCopy").innerHTML = "画面の音階キーをタップして演奏。<br>ノーツが判定ラインに重なる瞬間がチャンス。";
+        document.getElementById("startButton").textContent = "演奏をはじめる";
+        document.getElementById("stopButton").hidden = true;
+        document.getElementById("progressFill").style.width = "0%";
+        document.getElementById("nextOrb").textContent = "—";
+        document.getElementById("nextNote").textContent = "曲を選んでスタート";
+        document.getElementById("nextHint").textContent = "キーを押すタイミングを確認";
+        keyButtons.forEach((button) => button.classList.remove("next"));
+        overlay.classList.remove("hidden");
+        resizeCanvas();
+      }
+
+      function finishGame() {
+        document.getElementById("freePlayButton").hidden = false;
+        if (isTestPlay) {
+          returnFromTestPlay("テストプレイが最後まで終わりました。譜面は保存されていません。");
+          return;
+        }
+        state = "finished";
+        practiceHoldAt = null;
+        practiceNote = null;
+        document.getElementById("stopButton").hidden = true;
+        selectionControls.forEach((control) => { control.disabled = false; });
+        app.classList.remove("is-playing");
+        resizeCanvas();
+        document.getElementById("gameStatus").textContent = "FINISHED";
+        document.getElementById("overlayTitle").textContent = "演奏おつかれさま！";
+        document.getElementById("overlayCopy").innerHTML = `スコア ${score.toLocaleString()} pt · ベストコンボ ${bestCombo}<br>もう一度弾いて、運指を身につけよう。`;
+        document.getElementById("startButton").textContent = "もう一度演奏する";
+        overlay.classList.remove("hidden");
+        keyButtons.forEach((button) => button.classList.remove("next"));
+      }
+
+      document.getElementById("startButton").addEventListener("click", startGame);
+      document.getElementById("freePlayButton").addEventListener("click", startFreePlay);
+      document.getElementById("exitFreePlayButton").addEventListener("click", () => {
+        stopGame();
+        document.getElementById("freePlayButton").focus();
+      });
+      document.getElementById("stopButton").addEventListener("click", stopGame);
+      document.getElementById("pauseButton").addEventListener("click", pauseGame);
+      document.getElementById("loadChartButton").addEventListener("click", loadSelectedSongIntoEditor);
+      document.getElementById("saveChartButton").addEventListener("click", () => saveCreatorSong(false));
+      document.getElementById("saveNewChartButton").addEventListener("click", () => saveCreatorSong(true));
+      creatorChartInput.addEventListener("input", renderSheetPreview);
+      document.getElementById("sortChartButton").addEventListener("click", sortCreatorChart);
+      creatorBpmInput.addEventListener("input", renderSheetPreview);
+      creatorKeySignatureInput.addEventListener("change", () => {
+        stopPreview();
+        renderSheetPreview();
+        showCreatorStatus("調号を変更しました。試聴で確認し、保存ボタンで保存してください。");
+      });
+      deleteChartButton.addEventListener("click", removeSelectedCreatorSong);
+      previewChartButton.addEventListener("click", previewCreatorChart);
+      stopPreviewButton.addEventListener("click", () => stopPreview(true));
+      testPlayButton.addEventListener("click", startTestPlay);
+      startRecordingButton.addEventListener("click", startRecording);
+      stopRecordingButton.addEventListener("click", stopRecording);
+      exportChartsButton.addEventListener("click", exportCreatorSongs);
+      if (exportMobileAppButton) exportMobileAppButton.addEventListener("click", exportPortableApp);
+      importChartsButton.addEventListener("click", () => importChartsFile.click());
+      if (connectProjectButton) connectProjectButton.addEventListener("click", connectProjectFolder);
+      importChartsFile.addEventListener("change", async () => {
+        const [file] = importChartsFile.files;
+        if (!file) return;
+        try {
+          await importCreatorSongs(file);
+        } catch (error) {
+          console.error("譜面データを読み込めませんでした。", error);
+          showCreatorStatus("読み込みに失敗しました。ファイルを確認してください。", true);
+        } finally {
+          importChartsFile.value = "";
+        }
+      });
+      document.addEventListener("visibilitychange", handlePageVisibilityChange);
+      document.getElementById("songSelect").addEventListener("change", (event) => {
+        chart = charts[event.target.value];
+        updateReadyBpm();
+        loadSelectedSongIntoEditor();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
+        const index = keyboardShortcuts.indexOf(event.key.toLowerCase());
+        if (index < 0) return;
+        if (state === "playing" || state === "free" || isRecording) {
+          event.preventDefault();
+          playKey(index);
+        }
+      });
+      window.addEventListener("resize", resizeCanvas);
+      new ResizeObserver(resizeCanvas).observe(playfield);
+      resizeCanvas();
+      requestAnimationFrame(frame);
+
+      if ("serviceWorker" in navigator && window.isSecureContext) {
+        navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" }).catch((error) => {
+          console.error("オフライン用ファイルを準備できませんでした。", error);
+        });
+      }
+    })();
+
