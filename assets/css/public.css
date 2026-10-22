@@ -2,4 +2,13 @@
 .creator-mode {
   display: none !important;
 }
+.community-enabled .creator-mode { display: block !important; }
+.creator-mode #connectProjectButton,
+.creator-mode #exportMobileAppButton,
+.creator-mode #saveChartButton,
+.creator-mode #saveNewChartButton,
+.creator-mode #deleteChartButton,
+.creator-mode .project-folder-help,
+.creator-mode .creator-file-actions { display: none !important; }
+.creator-mode .portable-export-help { display: none !important; }
 
