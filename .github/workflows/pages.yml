@@ -28,7 +28,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site/assets
-          cp index.html admin.html manifest.webmanifest service-worker.js _site/
+          cp index.html manage-7a3d9c2e.html manifest.webmanifest service-worker.js _site/
           cp -R assets/* _site/assets/
           cp assets/css/public.css _site/public.css
           sed -i 's#</head>#  <link rel="stylesheet" href="public.css">\n</head>#' _site/index.html
