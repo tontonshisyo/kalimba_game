@@ -547,6 +547,37 @@
       .app:not(.is-playing) .start-icon { width: 90px; height: 75px; margin-bottom: 4px; }
       .start-box h2 { font-size: 18px; }
     }
+    .start-box .orientation-hint { margin: -6px auto 16px; color: #5e7655; font-size: 12px; }
+    .app.is-playing .orientation-hint, .app.is-playing .practice-start-control { display: none; }
+    .app.is-free-play .free-tuning { top: 10px; left: 10px; max-width: calc(100% - 140px); padding: 10px 14px; }
+    .app.is-free-play .free-tuning[open] { top: 10px; width: min(600px, calc(100% - 140px)); max-height: calc(100% - 110px); }
+    .app.is-free-play .main-column:has(.free-tuning[open]) .free-play-info { visibility: hidden; }
+    .app.is-playing .overlay { overflow-y: auto; overscroll-behavior: contain; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .app:not(.is-playing) .section-top { flex-wrap: wrap; gap: 12px; }
+      .app:not(.is-playing) .section-top > div:first-child { display: block; flex: 1 1 100%; }
+      .app:not(.is-playing) .selection-controls { width: 100%; min-width: 0; flex-wrap: wrap; }
+      .app:not(.is-playing) .song-select { max-width: 65%; min-width: 0; }
+      .app:not(.is-playing) h1 { white-space: normal; }
+      .app:not(.is-playing) .start-box { padding: 16px; }
+      .app:not(.is-playing) .start-icon { width: 76px; height: 63px; }
+      .app:not(.is-playing) .start-box p { margin-bottom: 10px; }
+      .app.is-free-play .free-play-info { inset: 62px 12px 88px; display: grid; grid-template-columns: auto auto; align-content: center; justify-content: center; gap: 6px 16px; }
+      .free-play-info > strong { font-size: 12px; }
+      .app.is-free-play .free-play-info > span { font-size: 26px; line-height: 1; }
+      .app.is-free-play .free-record-controls { grid-column: 1 / -1; gap: 5px; }
+      .app.is-free-play .free-play-info > p { display: none; }
+      .free-record-controls .creator-button { min-height: 40px; padding: 8px 12px; }
+      .free-record-controls output { font-size: 11px; line-height: 1.4; }
+      .app.is-playing .start-icon { display: none; }
+      .app.is-playing .start-box { padding: 16px; max-width: 100%; }
+      .app.is-playing .start-box p { margin-bottom: 12px; font-size: 12px; line-height: 1.5; }
+      .app.is-playing .start-box h2 { font-size: 18px; }
+      .app.is-playing .overlay-actions { gap: 10px; }
+      .app.is-playing .hud-combo { display: flex; align-items: center; gap: 10px; padding: 7px 12px; min-height: 44px; }
+      .app.is-playing .hud-combo strong { margin: 0; font-size: 19px; }
+      .app.is-free-play .hud-combo { display: none; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
