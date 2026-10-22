@@ -50,6 +50,7 @@
     .app.is-playing header, .app.is-playing .section-top, .app.is-playing .side-column, .app.is-playing footer { display: none; }
     .app.is-playing .creator-mode { display: none; }
     .app.is-playing .community-panel { display: none; }
+    .app.is-playing .beta-feedback { display: none; }
     .app.is-playing .layout, .app.is-playing .main-column { min-width: 0; min-height: 0; flex: 1; }
     .app.is-playing .layout { display: flex; flex-direction: column; align-items: stretch; width: 100%; }
     .app.is-playing .main-column { display: flex; flex-direction: column; width: 100%; }
@@ -173,6 +174,13 @@
     .creator-actions { display: flex; flex-wrap: wrap; gap: 7px; }
     .community-panel { margin: 12px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fffaf0; }
     .community-panel h2 { margin: 0; font-size: 16px; }
+    .beta-feedback { margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fffaf0; }
+    .beta-feedback summary { cursor: pointer; font-size: 14px; font-weight: bold; }
+    .beta-feedback form { display: grid; gap: 10px; padding-top: 10px; }
+    .beta-feedback p, .beta-feedback small { margin: 0; font-size: 11px; line-height: 1.7; }
+    .beta-feedback label { display: grid; gap: 5px; font-size: 12px; }
+    .beta-feedback textarea, .beta-feedback select { width: 100%; padding: 9px; font: inherit; border: 1px solid #bda88d; border-radius: 6px; background: #fffdf8; box-sizing: border-box; }
+    .beta-feedback textarea { font-size: 16px; resize: vertical; }
     .community-panel p, .community-publish-help { font-size: 11px; line-height: 1.7; }
     #communitySongs { display: grid; gap: 7px; margin: 10px 0; }
     #communitySongs button { text-align: left; overflow-wrap: anywhere; }
