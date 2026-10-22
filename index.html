@@ -118,6 +118,17 @@
           <button class="creator-button" id="communityMoreButton" type="button" hidden>さらに読み込む</button>
           <p id="communityStatus" role="status">投稿機能を準備中です。</p>
         </section>
+        <details class="beta-feedback">
+          <summary>β版 · 意見箱</summary>
+          <form id="betaFeedbackForm">
+            <p>使ってみた感想、ほしい機能、不具合などを教えてください。内容は管理者だけが確認します。名前・メールアドレスは不要です。</p>
+            <label for="feedbackCategory">種類<select id="feedbackCategory"><option value="idea">感想・アイデア</option><option value="bug">不具合の報告</option><option value="other">その他</option></select></label>
+            <label for="feedbackMessage">内容<textarea id="feedbackMessage" maxlength="2000" rows="5" placeholder="例：スマホで和音を弾くときに…" required></textarea></label>
+            <small>2000文字まで。個人情報は書かないでください。</small>
+            <button class="creator-button creator-button-primary" id="feedbackSend" type="submit">意見を送る</button>
+            <p id="feedbackStatus" role="status" aria-live="polite"></p>
+          </form>
+        </details>
         <details class="creator-mode">
           <summary>製作者モード — 譜面を作る・編集する</summary>
           <div class="creator-content">
@@ -280,6 +291,7 @@
     </main>
   </div>
   <script src="assets/js/game.js" defer></script>
+  <script src="assets/js/feedback.js" defer></script>
 </body>
 </html>
 
