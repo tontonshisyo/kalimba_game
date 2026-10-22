@@ -121,13 +121,21 @@
         <details class="beta-feedback">
           <summary>β版 · 意見箱</summary>
           <form id="betaFeedbackForm">
-            <p>使ってみた感想、ほしい機能、不具合などを教えてください。内容は管理者だけが確認します。名前・メールアドレスは不要です。</p>
+            <p>感想、ほしい機能、不具合などを教えてください。送った内容と管理者の返信・対応状況は、みんなに公開されます。名前・メールアドレスは不要です。</p>
             <label for="feedbackCategory">種類<select id="feedbackCategory"><option value="idea">感想・アイデア</option><option value="bug">不具合の報告</option><option value="other">その他</option></select></label>
             <label for="feedbackMessage">内容<textarea id="feedbackMessage" maxlength="2000" rows="5" placeholder="例：スマホで和音を弾くときに…" required></textarea></label>
             <small>2000文字まで。個人情報は書かないでください。</small>
-            <button class="creator-button creator-button-primary" id="feedbackSend" type="submit">意見を送る</button>
+            <label class="feedback-consent"><input id="feedbackPublicConsent" type="checkbox" required>内容が公開されることを確認しました</label>
+            <button class="creator-button creator-button-primary" id="feedbackSend" type="submit">公開して送る</button>
             <p id="feedbackStatus" role="status" aria-live="polite"></p>
           </form>
+          <section class="feedback-board" aria-label="みんなの意見と対応状況">
+            <h3>みんなの意見・対応状況</h3>
+            <button class="creator-button" id="feedbackReload" type="button">一覧を更新</button>
+            <div id="feedbackList"></div>
+            <button class="creator-button" id="feedbackMore" type="button" hidden>さらに読み込む</button>
+            <p id="feedbackListStatus" role="status" aria-live="polite"></p>
+          </section>
         </details>
         <details class="creator-mode">
           <summary>製作者モード — 譜面を作る・編集する</summary>
