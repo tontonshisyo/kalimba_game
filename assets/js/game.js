@@ -1018,7 +1018,7 @@
       function exportCreatorSongs() {
         try {
           const songs = Object.entries(songNames).map(([id, name]) => ({
-            id,
+            id: id.startsWith("community-") ? `user-${id}` : id,
             name,
             bpm: charts[id].bpm,
             keySignature: charts[id].keySignature || "C",
@@ -1053,7 +1053,7 @@
           if (!styleResponse.ok || !scriptResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
           const [styleText, scriptText] = await Promise.all([styleResponse.text(), scriptResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
-            id,
+            id: id.startsWith("community-") ? `user-${id}` : id,
             name,
             bpm: charts[id].bpm,
             keySignature: charts[id].keySignature || "C",
@@ -1192,7 +1192,7 @@
 
       async function saveCreatorSong(isNew) {
         const selectedId = songSelect.value;
-        const id = isNew
+        const id = isNew || selectedId.startsWith("community-")
           ? `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
           : selectedId;
         let validated;
@@ -1242,6 +1242,111 @@
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
       restoreProjectSongs();
+      initCommunitySongs();
+
+      let communityConfig;
+      let communityOffset = 0;
+      let communityBusy = false;
+      let communityPosting = false;
+
+      async function communityRequest(path, options = {}) {
+        const response = await fetch(`${communityConfig.url}/rest/v1/${path}`, {
+          ...options,
+          headers: { apikey: communityConfig.publishableKey, "Content-Type": "application/json", ...options.headers },
+          signal: AbortSignal.timeout(15000),
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("通信できませんでした。しばらくしてから再度お試しください。");
+        return response;
+      }
+
+      async function initCommunitySongs() {
+        const status = document.getElementById("communityStatus");
+        try {
+          const response = await fetch("./assets/data/community-config.json", { cache: "no-store" });
+          if (!response.ok) return;
+          const config = await response.json();
+          if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(config.url) || !/^sb_publishable_/.test(config.publishableKey)) return;
+          communityConfig = { url: config.url.replace(/\/$/, ""), publishableKey: config.publishableKey };
+          app.classList.add("community-enabled");
+          if (document.querySelector('link[href="public.css"]')) creatorDetails.querySelector("summary").textContent = "曲を作る・投稿する";
+          document.getElementById("publishSongButton").disabled = false;
+          await loadCommunitySongs(true);
+        } catch (error) {
+          status.textContent = "みんなの曲を読み込めませんでした。「曲を読み込む」で再試行できます。";
+        }
+      }
+
+      async function loadCommunitySongs(reset = false) {
+        if (communityBusy || !["ready", "finished"].includes(state)) return;
+        if (!communityConfig) { await initCommunitySongs(); return; }
+        communityBusy = true;
+        const status = document.getElementById("communityStatus");
+        status.textContent = "曲を読み込んでいます…";
+        try {
+          const offset = reset ? 0 : communityOffset;
+          const response = await communityRequest(`community_songs?select=id,title,bpm,key_signature,notes&order=created_at.desc,id.desc&limit=25&offset=${offset}`);
+          const rows = await response.json();
+          if (!Array.isArray(rows)) throw new Error("曲データを読み込めませんでした。");
+          if (!["ready", "finished"].includes(state)) { status.textContent = "演奏終了後に「曲を読み込む」を押してください。"; return; }
+          const list = document.getElementById("communitySongs");
+          if (reset) list.replaceChildren();
+          let added = 0;
+          for (const row of rows) {
+            try {
+              if (!/^[0-9a-f-]{36}$/.test(row.id) || !Array.isArray(row.notes) || row.notes.length > 2000) continue;
+              const source = row.notes.map((event) => {
+                if (!Number.isFinite(event.beat) || !Number.isInteger(event.lane) || !notes[event.lane]) throw new Error("Invalid note");
+                return `${event.beat},${notes[event.lane].name}${notes[event.lane].octave}`;
+              }).join("\n");
+              const parsed = parseCreatorChart(row.title, row.bpm, source, row.key_signature);
+              const id = `community-${row.id}`;
+              charts[id] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature };
+              songNames[id] = parsed.name;
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "creator-button";
+              button.textContent = `${parsed.name} · BPM ${parsed.bpm} · ${parsed.steps.length}音 — 選んで遊ぶ`;
+              button.addEventListener("click", () => {
+                if (!["ready", "finished"].includes(state)) return;
+                songSelect.value = id;
+                songSelect.dispatchEvent(new Event("change"));
+                document.getElementById("startButton").focus();
+                status.textContent = `「${parsed.name}」を選びました。「演奏をはじめる」で遊べます。`;
+              });
+              list.append(button);
+              added++;
+            } catch (error) { /* Skip malformed entries without stopping the list. */ }
+          }
+          communityOffset = offset + rows.length;
+          refreshSongOptions();
+          document.getElementById("communityMoreButton").hidden = rows.length < 25;
+          status.textContent = rows.length ? `${added}曲を読み込みました。` : offset ? "すべての曲を読み込みました。" : "まだ投稿がありません。最初の曲を作ってみましょう。";
+        } catch (error) { status.textContent = error.message; }
+        finally { communityBusy = false; }
+      }
+
+      async function publishCommunitySong() {
+        if (!communityConfig || communityPosting || !["ready", "finished"].includes(state)) return;
+        try {
+          const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
+          if (parsed.steps.length > 2000) throw new Error("投稿できる音符は2000個までです。");
+          if (!window.confirm(`「${parsed.name}」をみんなに公開しますか？曲名と譜面が公開されます。`)) return;
+          communityPosting = true;
+          document.getElementById("publishSongButton").disabled = true;
+          showCreatorStatus("曲を投稿しています…");
+          await communityRequest("community_songs", {
+            method: "POST", headers: { Prefer: "return=minimal" },
+            body: JSON.stringify({ title: parsed.name, bpm: parsed.bpm, key_signature: parsed.keySignature, notes: parsed.steps.map(([step, lane]) => ({ beat: step / 2, lane })) })
+          });
+          showCreatorStatus(`「${parsed.name}」を投稿しました。みんなの曲から遊べます。`);
+          await loadCommunitySongs(true);
+        } catch (error) { showCreatorStatus(error.message, true); }
+        finally {
+          communityPosting = false;
+          document.getElementById("publishSongButton").disabled = state === "playing" || state === "free" || state === "paused";
+        }
+      }
 
       function loadSettings() {
         try {
@@ -2227,6 +2332,9 @@
       }
 
       document.getElementById("startButton").addEventListener("click", startGame);
+      document.getElementById("communityRefreshButton").addEventListener("click", () => loadCommunitySongs(true));
+      document.getElementById("communityMoreButton").addEventListener("click", () => loadCommunitySongs(false));
+      document.getElementById("publishSongButton").addEventListener("click", publishCommunitySong);
       document.getElementById("freePlayButton").addEventListener("click", startFreePlay);
       document.getElementById("freeRecordButton").addEventListener("click", () => {
         if (state !== "free") return;
