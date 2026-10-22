@@ -56,7 +56,7 @@
       }
       offset = nextOffset + rows.length;
       more.hidden = rows.length < 25;
-      listStatus.textContent = offset ? `${offset}件を読み込みました。` : "公開された意見はまだありません。";
+      listStatus.textContent = offset ? `${offset}件のおたよりを表示しています。` : "まだおたよりはありません。最初のひとことを、どうぞ。";
     } catch (error) { listStatus.textContent = error.message; }
     finally { listBusy = false; document.getElementById("feedbackReload").disabled = false; more.disabled = false; }
   }
@@ -83,7 +83,7 @@
       if (response.status === 404) throw new Error("意見箱は受付の準備中です。しばらくしてからお試しください。");
       if (!response.ok) throw new Error("送信できませんでした。入力内容を残してありますので、しばらくしてから再度お試しください。");
       if (field.value.trim() === message) { field.value = ""; consent.checked = false; }
-      status.textContent = "ご意見を公開しました。ありがとうございます！";
+      status.textContent = "おたよりが届きました。ありがとうございます！";
       if (listBusy) listStatus.textContent = "投稿しました。一覧にない場合は「一覧を更新」を押してください。";
       else await loadFeedback(true);
     } catch (error) {
