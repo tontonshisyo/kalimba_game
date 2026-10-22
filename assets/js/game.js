@@ -1065,6 +1065,8 @@
           portableDocument.querySelector("#connectProjectButton")?.remove();
           portableDocument.querySelector("#exportMobileAppButton")?.remove();
           portableDocument.querySelector(".project-folder-help")?.remove();
+          portableDocument.querySelector(".beta-feedback")?.remove();
+          portableDocument.querySelector('script[src="assets/js/feedback.js"]')?.remove();
           const portableStyle = document.createElement("style");
           portableStyle.textContent = styleText.replace(/<\/style/gi, "<\\/style");
           portableDocument.querySelector("head").append(portableStyle);
@@ -1290,7 +1292,12 @@
           if (!Array.isArray(rows)) throw new Error("曲データを読み込めませんでした。");
           if (!["ready", "finished"].includes(state)) { status.textContent = "演奏終了後に「曲を読み込む」を押してください。"; return; }
           const list = document.getElementById("communitySongs");
-          if (reset) list.replaceChildren();
+          if (reset) {
+            list.replaceChildren();
+            for (const id of Object.keys(songNames)) {
+              if (id.startsWith("community-")) { delete songNames[id]; delete charts[id]; }
+            }
+          }
           let added = 0;
           for (const row of rows) {
             try {
