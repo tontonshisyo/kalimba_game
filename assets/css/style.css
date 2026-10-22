@@ -181,6 +181,16 @@
     .beta-feedback label { display: grid; gap: 5px; font-size: 12px; }
     .beta-feedback textarea, .beta-feedback select { width: 100%; padding: 9px; font: inherit; border: 1px solid #bda88d; border-radius: 6px; background: #fffdf8; box-sizing: border-box; }
     .beta-feedback textarea { font-size: 16px; resize: vertical; }
+    .beta-feedback .feedback-consent { display: flex; align-items: center; gap: 8px; }
+    .feedback-consent input { width: 18px; height: 18px; flex-shrink: 0; }
+    .feedback-board { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+    .feedback-entry { margin: 10px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fffdf8; }
+    .feedback-entry p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
+    .feedback-entry small { color: var(--muted); }
+    .feedback-state { display: inline-block; padding: 3px 9px; border-radius: 12px; background: #eee1c6; font-size: 11px; font-weight: bold; }
+    .feedback-state.planned { background: #dce9fa; color: #294c7b; }
+    .feedback-state.implemented { background: #d7eddd; color: #285938; }
+    .feedback-admin-reply { padding: 8px 10px; border-left: 3px solid #a76c37; background: #f6eedf; }
     .community-panel p, .community-publish-help { font-size: 11px; line-height: 1.7; }
     #communitySongs { display: grid; gap: 7px; margin: 10px 0; }
     #communitySongs button { text-align: left; overflow-wrap: anywhere; }
