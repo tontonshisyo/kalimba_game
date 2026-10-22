@@ -14,7 +14,7 @@
   function setBusy(value) {
     busy = value;
     for (const id of ["adminLoginButton", "adminReload", "adminMore", "adminKind"]) byId(id).disabled = value;
-    byId("adminItems").querySelectorAll("button").forEach((button) => { button.disabled = value; });
+    byId("adminItems").querySelectorAll("button, select, textarea").forEach((control) => { control.disabled = value; });
   }
   async function request(path, options = {}, token = session?.access_token) {
     const response = await fetch(`${config.url}${path}`, {
@@ -33,7 +33,7 @@
     const ownRevision = revision;
     const kind = byId("adminKind").value;
     const nextOffset = reset ? 0 : offset;
-    const columns = kind === "community_songs" ? "id,title,bpm,created_at,is_visible" : "id,category,message,created_at";
+    const columns = kind === "community_songs" ? "id,title,bpm,created_at,is_visible" : "id,category,message,created_at,is_public,status,admin_reply";
     setBusy(true);
     status("読み込んでいます…");
     try {
@@ -70,6 +70,49 @@
           if (deleted && deleteRevision === revision) { await loadItems(true); status("削除しました。"); }
         });
         article.append(heading, body, date, document.createElement("br"), remove);
+        if (kind === "beta_feedback") {
+          const visibility = document.createElement("p");
+          visibility.textContent = row.is_public ? "公開された意見：返信と対応状況も公開されます。" : "非公開の意見：管理画面だけに表示されます。";
+          const statusLabel = document.createElement("label");
+          statusLabel.textContent = "対応状況";
+          const stateSelect = document.createElement("select");
+          for (const [value, label] of Object.entries({ reviewing: "検討中", planned: "実装予定", implemented: "実装済み" })) {
+            const option = document.createElement("option"); option.value = value; option.textContent = label; stateSelect.append(option);
+          }
+          stateSelect.value = row.status;
+          statusLabel.append(stateSelect);
+          const replyLabel = document.createElement("label");
+          replyLabel.textContent = "管理者からの返信（2000文字まで）";
+          const reply = document.createElement("textarea");
+          reply.maxLength = 2000;
+          reply.value = row.admin_reply || "";
+          replyLabel.append(reply);
+          const save = document.createElement("button");
+          save.type = "button"; save.textContent = "返信・対応状況を保存";
+          save.addEventListener("click", async () => {
+            if (busy || !session || !/^[0-9a-f-]{36}$/.test(row.id)) return;
+            const replyText = reply.value.trim();
+            if (replyText.length > 2000) { status("返信は2000文字までです。"); return; }
+            const selectedStatus = stateSelect.value;
+            if (!["reviewing", "planned", "implemented"].includes(selectedStatus)) return;
+            if (row.is_public && !window.confirm("返信と対応状況を公開して保存しますか？")) return;
+            const saveRevision = revision;
+            setBusy(true);
+            try {
+              const response = await request(`/rest/v1/beta_feedback?id=eq.${encodeURIComponent(row.id)}`, {
+                method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ status: selectedStatus, admin_reply: replyText })
+              });
+              const updated = await response.json();
+              if (!Array.isArray(updated) || updated.length !== 1) throw new Error("保存対象が見つからないか、更新権限がありません。");
+              if (saveRevision === revision) {
+                row.status = selectedStatus; row.admin_reply = replyText;
+                status("返信と対応状況を保存しました。");
+              }
+            } catch (error) { if (saveRevision === revision) status(error.message); }
+            finally { setBusy(false); }
+          });
+          article.append(visibility, statusLabel, replyLabel, save);
+        }
         byId("adminItems").append(article);
       }
       offset = nextOffset + rows.length;
