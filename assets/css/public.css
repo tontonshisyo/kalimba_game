@@ -1,0 +1,5 @@
+/* Public game page: keep authoring and project-management controls out of view. */
+.creator-mode {
+  display: none !important;
+}
+
