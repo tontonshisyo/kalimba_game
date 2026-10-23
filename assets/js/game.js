@@ -1759,7 +1759,7 @@
             const depth = approach;
             const { x, y } = geometry.lanePoint(note.lane, depth);
             const laneBounds = geometry.laneBounds(note.lane, 1 - depth);
-            const radiusX = Math.max(3, (laneBounds.right - laneBounds.left) * .46);
+            const radiusX = Math.max(3, (laneBounds.right - laneBounds.left) * .44);
             const radiusY = radiusX * .48;
             const color = notes[note.lane].color;
             ctx.save();
