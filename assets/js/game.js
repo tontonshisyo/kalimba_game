@@ -1893,7 +1893,6 @@
           }
         }
         const lastTime = activeNotes[activeNotes.length - 1].time;
-        document.getElementById("progressFill").style.width = `${Math.min(100, elapsed / (lastTime + 2) * 100)}%`;
         if (!practiceNote && elapsed > lastTime + 2.8) finishGame();
       }
 
@@ -2063,10 +2062,6 @@
       }
 
       function updateStats() {
-        document.getElementById("scoreValue").innerHTML = `${score.toLocaleString()} <span>pt</span>`;
-        document.getElementById("accuracyValue").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
-        document.getElementById("bestCombo").textContent = String(bestCombo);
-        document.getElementById("comboValue").textContent = String(combo);
         document.getElementById("hudCombo").textContent = String(combo);
       }
 
@@ -2081,20 +2076,7 @@
       }
 
       function setNextNote() {
-        const chord = getNextChord();
-        const lanes = new Set(chord.map((note) => note.lane));
-        const keys = chord.map((note) => getSignatureNote(note.lane, chart.keySignature));
-        const key = keys[0];
-        const names = keys.map((note) => note.displayName).join("・");
-        document.getElementById("nextOrb").textContent = keys.length > 1 ? "和音" : key ? names : "♪";
-        document.getElementById("nextNote").textContent = key ? `${names} を弾こう` : "すべての音を演奏！";
-        document.getElementById("nextHint").textContent = key
-          ? keys.length > 1
-            ? "同じ拍の音をすべて光らせています"
-          : practiceMode
-            ? "正しい音を弾くと次へ進む"
-            : `${key.side === "left" ? "左手" : key.side === "right" ? "右手" : "中央"} · ${key.key.toUpperCase()} キー`
-          : "最後まであと少し";
+        const lanes = new Set(getNextChord().map((note) => note.lane));
         keyButtons.forEach((button, index) => button.classList.toggle("next", lanes.has(index)));
       }
 
@@ -2108,10 +2090,10 @@
           { opacity: 1, offset: .5 },
           { opacity: 0, offset: 1 }
         ] : [
-          { opacity: 0, transform: "translate(-50%, -35%) scale(.82)", offset: 0 },
-          { opacity: 1, transform: "translate(-50%, -65%) scale(1.08)", offset: .18 },
-          { opacity: 1, transform: "translate(-50%, -85%) scale(1)", offset: .45 },
-          { opacity: 0, transform: "translate(-50%, -155%) scale(.97)", offset: 1 }
+          { opacity: 0, transform: "translate(-50%, calc(-50% + 3px)) scale(.82)", offset: 0 },
+          { opacity: 1, transform: "translate(-50%, calc(-50% - 1px)) scale(1.08)", offset: .18 },
+          { opacity: 1, transform: "translate(-50%, calc(-50% - 3px)) scale(1)", offset: .45 },
+          { opacity: 0, transform: "translate(-50%, calc(-50% - 8px)) scale(.97)", offset: 1 }
         ], { duration: reducedMotion ? 400 : 620, easing: "ease-out" });
         toastAnimation.onfinish = () => {
           toast.classList.remove("show");
@@ -2280,10 +2262,6 @@
         document.getElementById("overlayCopy").textContent = "譜面を編集して、もう一度テストできます。";
         document.getElementById("startButton").textContent = "曲を弾く";
         document.getElementById("stopButton").hidden = true;
-        document.getElementById("progressFill").style.width = "0%";
-        document.getElementById("nextOrb").textContent = "—";
-        document.getElementById("nextNote").textContent = "好きな曲を選んでね";
-        document.getElementById("nextHint").textContent = "演奏中は、次の音をお知らせ";
         keyButtons.forEach((button) => button.classList.remove("next"));
         overlay.classList.remove("hidden");
         resizeCanvas();
@@ -2333,10 +2311,6 @@
         document.getElementById("overlayCopy").innerHTML = "曲に合わせて、光る鍵盤をぽろん。<br>自由に弾きたいときは「フリー演奏」へ。";
         document.getElementById("startButton").textContent = "曲を弾く";
         document.getElementById("stopButton").hidden = true;
-        document.getElementById("progressFill").style.width = "0%";
-        document.getElementById("nextOrb").textContent = "—";
-        document.getElementById("nextNote").textContent = "好きな曲を選んでね";
-        document.getElementById("nextHint").textContent = "演奏中は、次の音をお知らせ";
         keyButtons.forEach((button) => button.classList.remove("next"));
         overlay.classList.remove("hidden");
         resizeCanvas();
