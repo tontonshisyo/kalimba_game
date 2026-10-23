@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3e7d5">
+  <meta name="description" content="17鍵カリンバで遊べる「おといろ」の紹介、遊び方、採点、データの保存と収録曲について。">
+  <link rel="icon" href="assets/icons/kalimba.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/about.css">
+  <title>このアプリについて — おといろ</title>
+</head>
+<body>
+  <a class="about-skip" href="#aboutMain">本文へ</a>
+  <div class="about-shell">
+    <header class="about-header">
+      <a class="about-brand" href="./index.html"><img src="assets/icons/kalimba.svg" width="40" height="40" alt=""><span>おといろ<small>17鍵カリンバ</small></span></a>
+      <a class="about-back" href="./index.html">演奏に戻る <span aria-hidden="true">→</span></a>
+    </header>
+    <main id="aboutMain">
+      <section class="about-hero" aria-labelledby="aboutTitle">
+        <div><p class="about-eyebrow">ABOUT OTOIRO · β版</p><h1 id="aboutTitle">このアプリについて</h1><p class="about-lead">カリンバを、<br>ブラウザーで気軽に。</p><p>「おといろ」は、17鍵のカリンバをタッチやキーボードで演奏できるWebアプリです。曲に合わせた練習も、自由な演奏も楽しめます。</p></div>
+        <img class="about-art" src="assets/icons/wood-music.svg" width="240" height="270" alt="" aria-hidden="true">
+      </section>
+      <nav class="about-nav" aria-label="このページの内容"><a href="#howto">遊び方</a><a href="#scoring">採点</a><a href="#data">データの保存</a><a href="#music">収録曲</a><a href="#feedbackInfo">意見箱</a></nav>
+      <div class="about-grid">
+        <section class="about-card" id="howto" aria-labelledby="howtoTitle"><p class="about-eyebrow">PLAY</p><h2 id="howtoTitle">はじめて遊ぶ方へ</h2>
+          <ol><li>曲を選んで「曲を演奏」を押します。スマホは横画面がおすすめです。</li><li>音符が下の判定ラインに来たら、同じ音の鍵盤を押します。</li><li>和音は基本、低い音から順番に弾きます。左右の手で弾ける音は同時でも大丈夫です。</li></ol>
+          <p>ホームの「チュートリアル」では、8個の音符で操作を練習できます。</p>
+          <dl class="about-modes"><div><dt>練習モード</dt><dd>入力するまで音符が待ちます。テンポを落としたり、途中の拍から練習したりできます。</dd></div><div><dt>フリー演奏</dt><dd>譜面に合わせず自由に弾けます。調の変更や、演奏の録音・再生にも対応しています。</dd></div></dl>
+          <p class="about-note">音が出ないときは端末の音量を確認してください。キーボードは各鍵盤に表示されたキー（1〜0、Q〜U）で操作できます。</p>
+        </section>
+        <section class="about-card" id="scoring" aria-labelledby="scoringTitle"><p class="about-eyebrow">SCORE</p><h2 id="scoringTitle">採点について</h2>
+          <dl class="about-score"><div><dt>PERFECT</dt><dd>1,000点</dd></div><div><dt>GOOD</dt><dd>600点</dd></div><div><dt>MISS</dt><dd>0点・コンボ解除</dd></div><div><dt>余計な音</dt><dd>−500点・コンボ解除</dd></div></dl>
+          <p>GOODの判定範囲に合う音符がない入力は「余計な音」になります。同じ音符を弾いた後の連打も対象です。開始前の待ち時間や演奏終了後、フリー演奏は対象外です。</p>
+          <p>表示スコアの最低値は0点です。減点は演奏全体で累積します。「正確さ」はタイミングの判定に加え、MISSと余計な音の回数も反映します。</p>
+          <p>和音の採点では、判定範囲内ならどの順番でも受け付けます。練習モードでは、正解した音はGOODになります。</p>
+        </section>
+        <section class="about-card" id="data" aria-labelledby="dataTitle"><p class="about-eyebrow">YOUR DATA</p><h2 id="dataTitle">保存と共有について</h2>
+          <p>作成・保存した譜面と設定は、お使いの端末・ブラウザー内に保存します。別の端末やブラウザーには自動で引き継がれません。ブラウザーのサイトデータを削除すると失われることがあります。</p>
+          <p>フリー演奏の録音と演奏結果は、そのページを開いている間のデータです。録音はページを閉じたり再読み込みしたりすると消えます。</p>
+          <p>意見箱へ送信した内容や公開設定は、運営側のサーバーに保存されます。公開に同意した内容と管理者からの返信は、意見箱の一覧に表示されます。</p>
+          <p>譜面の共有リンクには、曲名や譜面データが含まれます。リンクを受け取った人はその内容を開けます。リンクを作成しただけで、公開の曲一覧へ投稿されることはありません。</p>
+          <p>共有する曲は、ご自身で作った曲や、共有の許可がある曲を選んでください。演奏結果は画像とコメントで共有できます。</p>
+        </section>
+        <section class="about-card" id="music" aria-labelledby="musicTitle"><p class="about-eyebrow">MUSIC</p><h2 id="musicTitle">収録曲と難易度</h2>
+          <p>収録曲は、古くからの伝承曲や、原曲の著作権保護期間が満了した曲をもとにした17鍵用のゲーム譜面です。歌詞や既存の録音音源は使用せず、アプリ内で音を合成しています。</p>
+          <ul class="about-songs"><li>きらきら星／フランス伝承曲</li><li>メリーさんの羊／アメリカの童謡</li><li>かえるのうた／ドイツ伝承曲</li><li>大きな古時計／H. C. ワーク</li><li>歓喜の歌／L. van ベートーヴェン</li><li>ロンドン橋／イギリス伝承曲</li><li>ジングルベル／J. L. ピアポント</li><li>きよしこの夜／F. X. グルーバー</li><li>おおスザンナ／S. C. フォスター</li></ul>
+          <p>難易度は「かんたん・ふつう・むずかしい・めちゃむず」の4段階です。元のテンポでの平均音符数と、音が集中する4秒間の音符数から計算します。和音は構成音をそれぞれ数えます。指の移動距離などは含まないため、目安として使ってください。</p>
+          <p><a href="https://github.com/tontonshisyo/kalimba_game/blob/main/tools/CLASSIC-SONGS.md" target="_blank" rel="noopener noreferrer">追加曲の出典・確認資料を見る <span aria-hidden="true">↗</span></a></p>
+        </section>
+      </div>
+      <section class="about-feedback" id="feedbackInfo" aria-labelledby="feedbackTitle"><div><p class="about-eyebrow">BETA FEEDBACK</p><h2 id="feedbackTitle">使ってみた感想を教えてください</h2><p>現在はβ版です。不具合やアイデアはホームの意見箱から送れます。公開に同意した意見は、ほかの方も閲覧でき、管理者からの返信や対応状況を確認できます。名前や連絡先などの個人情報は書かないでください。</p><p>意見の送信・一覧の表示にはインターネット接続が必要です。</p></div><a class="about-back" href="./index.html#feedback">意見箱を開く <span aria-hidden="true">→</span></a></section>
+    </main>
+    <footer class="about-footer"><span>おといろ · 17鍵カリンバ · β版</span><a href="./index.html">演奏に戻る</a></footer>
+  </div>
+</body>
+</html>
+
