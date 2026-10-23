@@ -607,6 +607,12 @@
       .result-stats dt { font-size: 10px; }
       .result-stats dd { font-size: 21px; }
     }
+    @media (orientation: landscape) {
+      .app:not(.is-playing) { max-width: none; }
+      .app:not(.is-playing) .layout { grid-template-columns: minmax(0, 1fr); }
+      .app:not(.is-playing) .side-column { grid-template-columns: minmax(0, 1fr); }
+      .app:not(.is-playing) .side-column .panel:last-child { display: block; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
