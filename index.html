@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f3e7d5">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="曲に合わせて練習できる17鍵カリンバ。フリー演奏・録音・曲の作成と投稿に対応。">
+  <meta name="description" content="曲に合わせて練習できる17鍵カリンバ。フリー演奏・録音・曲の作成とファイル共有に対応。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/kalimba.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/kalimba.svg">
@@ -165,14 +165,6 @@
           </div>
         </details>
 
-        <section class="community-panel" aria-label="みんなの曲">
-          <h2><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg>みんなの曲</h2>
-          <p>公開された曲を選んで演奏できます。</p>
-          <button class="creator-button" id="communityRefreshButton" type="button">曲を更新</button>
-          <div id="communitySongs"></div>
-          <button class="creator-button" id="communityMoreButton" type="button" hidden>さらに読み込む</button>
-          <p id="communityStatus" role="status">投稿機能を準備中です。</p>
-        </section>
         <details class="beta-feedback">
           <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></svg>意見・不具合の報告 · β</summary>
           <form id="betaFeedbackForm">
@@ -193,8 +185,20 @@
           </section>
         </details>
         <details class="creator-mode">
-          <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 11-11 4 4L9 19l-5 1 1-5ZM14 6l4 4M4 4h6M4 8h3"/></svg>曲を作成・投稿</summary>
+          <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 11-11 4 4L9 19l-5 1 1-5ZM14 6l4 4M4 4h6M4 8h3"/></svg>曲の作成・共有</summary>
           <div class="creator-content">
+            <p class="chart-help">作成した曲はこのブラウザー内に保存されます。共有ファイルで個別に渡せます。曲はサーバーへ送信されません。</p>
+            <div class="chart-sharing" aria-label="曲の共有">
+              <div class="creator-actions">
+                <button class="creator-button creator-button-primary" id="prepareShareButton" type="button">共有ファイルを作成</button>
+                <button class="creator-button" id="sendShareButton" type="button" hidden>共有先を選ぶ</button>
+                <button class="creator-button" id="downloadShareButton" type="button" hidden>ファイルを保存</button>
+                <button class="creator-button" id="importShareButton" type="button">共有ファイルを読み込む</button>
+                <input id="importShareFile" type="file" accept=".otoiro,.json,application/json,application/octet-stream" hidden>
+              </div>
+              <p class="chart-help">編集中の1曲を圧縮して渡せます。受け取った人はこの画面でファイルを読み込むと演奏できます。</p>
+              <p id="shareStatus" class="chart-help" role="status" aria-live="polite"></p>
+            </div>
             <p class="creator-help">1行に「拍,音名」を1つ書きます。例：<code>0,C4</code>。拍は小数で入力でき、同じ拍の音は低い音から高い音へアルペジオで演奏し、一番高い音が拍に合います。<code>#</code>から行末まではメモとして無視されます。</p>
             <div class="creator-fields">
               <label for="creatorSongName">曲名<input id="creatorSongName" type="text" maxlength="40" value="新しい曲" autocomplete="off"></label>
@@ -227,11 +231,9 @@
 6,G4</textarea>
             <p class="chart-help" id="creatorChartHelp">使える音：D6 B5 G5 E5 C5 A4 F4 D4 C4 E4 G4 B4 D5 F5 A5 C6 E6</p>
             <div class="creator-actions">
-              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>曲を公開</button>
-              <span class="community-publish-help">投稿すると、曲名と譜面が誰でも遊べる状態で公開されます。公開してよい曲を投稿してください。</span>
               <button class="creator-button" id="loadChartButton" type="button">選択中の曲を更新</button>
               <button class="creator-button" id="saveChartButton" type="button">選択中の曲に保存</button>
-              <button class="creator-button creator-button-primary" id="saveNewChartButton" type="button">新しい曲として保存</button>
+              <button class="creator-button creator-button-primary" id="saveNewChartButton" type="button">この端末に新しい曲を保存</button>
               <button class="creator-button creator-button-danger" id="deleteChartButton" type="button" hidden>選択中の曲を削除</button>
             </div>
             <div class="creator-actions creator-play-actions">
@@ -288,6 +290,7 @@
       </aside>
     </main>
   </div>
+  <script src="assets/js/sharing.js" defer></script>
   <script src="assets/js/game.js" defer></script>
   <script src="assets/js/feedback.js" defer></script>
 </body>
