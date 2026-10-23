@@ -213,6 +213,9 @@
       let bestCombo = 0;
       let judged = 0;
       let accuracyPoints = 0;
+      let perfectCount = 0;
+      let goodCount = 0;
+      let missCount = 0;
       let toastTimer = 0;
       let hitLine = 0;
 
@@ -1881,6 +1884,7 @@
           if (!note.spawned && elapsed >= note.time - runTravelTime) note.spawned = true;
           if (!practiceMode && !note.hit && !note.missed && elapsed > note.time + .18) {
             note.missed = true;
+            missCount++;
             judged++;
             combo = 0;
             updateStats();
@@ -1949,6 +1953,8 @@
         combo++;
         bestCombo = Math.max(bestCombo, combo);
         const isPerfect = !wasWaiting && difference <= .085;
+        if (isPerfect) perfectCount++;
+        else goodCount++;
         accuracyPoints += isPerfect ? 100 : 60;
         score += isPerfect ? 1000 : 600;
         effects.push({ lane, createdAt: performance.now() });
@@ -2057,7 +2063,7 @@
       }
 
       function updateStats() {
-        document.getElementById("scoreValue").innerHTML = `${String(score).padStart(6, "0")} <span>pt</span>`;
+        document.getElementById("scoreValue").innerHTML = `${score.toLocaleString()} <span>pt</span>`;
         document.getElementById("accuracyValue").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
         document.getElementById("bestCombo").textContent = String(bestCombo);
         document.getElementById("comboValue").textContent = String(combo);
@@ -2130,6 +2136,7 @@
 
       function startFreePlay() {
         if (isRecording || (state !== "ready" && state !== "finished")) return;
+        document.getElementById("resultPanel").hidden = true;
         stopPreview();
         cancelSheetGesture();
         clearPointerInteraction();
@@ -2183,6 +2190,8 @@
         document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / runTempoScale)}`;
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
+        perfectCount = 0; goodCount = 0; missCount = 0;
+        document.getElementById("resultPanel").hidden = true;
         updateStats();
         startedAt = performance.now();
         state = "playing";
@@ -2220,6 +2229,8 @@
         activeNotes = createActiveNotes(chart, startBeat);
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
+        perfectCount = 0; goodCount = 0; missCount = 0;
+        document.getElementById("resultPanel").hidden = true;
         updateStats();
         startedAt = performance.now();
         state = "playing";
@@ -2336,6 +2347,17 @@
         document.getElementById("startButton").textContent = "もう一度演奏する";
         overlay.classList.remove("hidden");
         keyButtons.forEach((button) => button.classList.remove("next"));
+        const resultPanel = document.getElementById("resultPanel");
+        document.getElementById("resultSong").textContent = document.getElementById("songSelect").selectedOptions[0]?.textContent || "";
+        document.getElementById("resultScore").textContent = score.toLocaleString();
+        document.getElementById("resultPerfect").textContent = perfectCount.toLocaleString();
+        document.getElementById("resultGood").textContent = goodCount.toLocaleString();
+        document.getElementById("resultMiss").textContent = missCount.toLocaleString();
+        document.getElementById("resultCombo").textContent = bestCombo.toLocaleString();
+        document.getElementById("resultAccuracy").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
+        resultPanel.hidden = false;
+        resultPanel.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: "instant" });
       }
 
       document.getElementById("startButton").addEventListener("click", startGame);
