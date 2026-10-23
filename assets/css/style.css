@@ -706,6 +706,12 @@
     .orientation-symbol { font-size: 36px; color: #95663e; }
     .orientation-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
     .orientation-actions button { min-height: 44px; }
+    .free-video-dialog { width: min(540px, calc(100% - 24px)); text-align: left; }
+    .free-video-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .free-video-range label, .free-video-comment { font-size: 13px; }
+    .free-video-range input, .free-video-comment textarea { display: block; width: 100%; box-sizing: border-box; margin: 6px 0 12px; padding: 10px; background: #fffdf7; border: 1px solid #d8bea0; border-radius: 10px; color: #573b29; font: 16px/1.5 var(--sans); }
+    .free-video-dialog canvas, .free-video-dialog video { display: block; width: min(100%, 290px); height: auto; margin: 12px auto; border-radius: 14px; }
+    .free-video-dialog [hidden] { display: none; }
     .tutorial-lessons { padding-left: 24px; text-align: left; font-size: 14px; line-height: 1.8; margin: 0 0 20px; }
     .tutorial-guide { position: absolute; z-index: 4; top: 52px; left: 50%; transform: translateX(-50%); width: min(400px, calc(100% - 32px)); box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff4dfeb; color: #573b29; font-size: 13px; line-height: 1.5; text-align: center; pointer-events: none; }
     .app:not(.is-playing) .tutorial-guide { display: none; }
