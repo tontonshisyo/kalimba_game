@@ -7,17 +7,8 @@
   const status = document.getElementById("resultImageStatus");
   const commentInput = document.getElementById("resultShareComment");
   const openXButton = document.getElementById("openResultXButton");
-  let latestResult =const tagged = window.OtoiroSharing.withHashtags(value);
-    if (tagged.length > Number(commentInput.maxLength)) {
-      commentInput.setCustomValidity("ハッシュタグを含めて500文字以内にしてください。");
-      status.textContent = "投稿コメントが長すぎます。短くしてください。";
-      commentInput.focus();
-      commentInput.reportValidity();
-      return null;
-    }
-    commentInput.value = tagged;
-    return tagged;null;
-  let imageFile = null;
+  let latestResult = null;
+ let imageFile = null;
   let previewURL = null;
   let generation = 0;
   const font = '"Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
