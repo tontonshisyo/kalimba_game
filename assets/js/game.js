@@ -2538,29 +2538,29 @@
           const link = await window.OtoiroSharing.createLink(parsed);
           if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
           preparedShareLink = link;
-          shareLinkOutput.value = link;
+          shareLinkOutput.value = window.OtoiroSharing.withHashtags("おといろで「" + creatorNameInput.value + "」を演奏") + "\n" + link;
           shareLinkOutput.hidden = false;
           downloadShareButton.hidden = false;
           sendShareButton.hidden = typeof navigator.share !== "function";
-          shareStatus.textContent = "リンクをコピーするか、共有先を選んで投稿してください。" + (link.length > 2000 ? " リンクが長めです。末尾まで含まれていることを確認してください。" : "");
+          shareStatus.textContent = "投稿文をコピーするか、共有先を選んで投稿してください。" + (link.length > 2000 ? " リンクが長めです。末尾まで含まれていることを確認してください。" : "");
         } catch (error) { shareStatus.textContent = error.message; }
         finally { prepareShareButton.disabled = false; }
       });
       sendShareButton.addEventListener("click", async () => {
         if (!preparedShareLink) return;
-        try { await navigator.share({ url: preparedShareLink, title: creatorNameInput.value, text: "おといろで「" + creatorNameInput.value + "」を演奏" }); }
+        try { await navigator.share({ url: preparedShareLink, title: creatorNameInput.value, text: window.OtoiroSharing.withHashtags("おといろで「" + creatorNameInput.value + "」を演奏") }); }
         catch (error) { if (error.name !== "AbortError") shareStatus.textContent = "共有できませんでした。「リンクをコピー」からSNSに貼り付けてください。"; }
       });
       downloadShareButton.addEventListener("click", async () => {
         if (!preparedShareLink) return;
         try {
-          if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(preparedShareLink);
+          if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(shareLinkOutput.value);
           else {
             shareLinkOutput.focus();
             shareLinkOutput.select();
             if (!document.execCommand("copy")) throw new Error("copy unavailable");
           }
-          shareStatus.textContent = "共有リンクをコピーしました。SNSやメッセージに貼り付けてください。";
+          shareStatus.textContent = "投稿文をコピーしました。SNSやメッセージに貼り付けてください。";
         } catch {
           shareLinkOutput.focus();
           shareLinkOutput.select();
