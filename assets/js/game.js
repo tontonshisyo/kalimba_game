@@ -171,6 +171,7 @@
         document.getElementById("freeRecordButton").textContent = freeRecordStartedAt === null ? "録音を開始" : "録音を停止";
         document.getElementById("freeRecordButton").disabled = freeReplayStartedAt !== null;
         document.getElementById("freeReplayButton").disabled = !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
+        document.getElementById("freeVideoButton").disabled = !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
         document.getElementById("freeReplayStopButton").hidden = freeReplayStartedAt === null;
         if (message) document.getElementById("freeRecordStatus").textContent = message;
       }
@@ -1060,15 +1061,16 @@
         }
         exportMobileAppButton.disabled = true;
         try {
-          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse, songLibraryResponse] = await Promise.all([
+          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse, songLibraryResponse, freeVideoResponse] = await Promise.all([
             fetch("./assets/css/style.css", { cache: "no-store" }),
             fetch("./assets/js/game.js", { cache: "no-store" }),
             fetch("./assets/js/sharing.js", { cache: "no-store" }),
             fetch("./assets/js/result-share.js", { cache: "no-store" }),
-            fetch("./assets/js/song-library.js", { cache: "no-store" })
+            fetch("./assets/js/song-library.js", { cache: "no-store" }),
+            fetch("./assets/js/free-video.js", { cache: "no-store" })
           ]);
-          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok || !songLibraryResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
-          const [styleText, scriptText, sharingText, resultShareText, songLibraryText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text(), songLibraryResponse.text()]);
+          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok || !songLibraryResponse.ok || !freeVideoResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText, sharingText, resultShareText, songLibraryText, freeVideoText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text(), songLibraryResponse.text(), freeVideoResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
             id: id.startsWith("community-") ? `user-${id}` : id,
             name,
@@ -1092,9 +1094,10 @@
           portableDocument.querySelector('script[src="assets/js/sharing.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/result-share.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/song-library.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/free-video.js"]')?.remove();
           portableDocument.querySelector("#resultPanel").hidden = true;
           const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${songLibraryText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${songLibraryText.replace(/<\/script/gi, "<\\/script")}\n${freeVideoText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
           oldScript.replaceWith(portableScript);
           const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -2502,6 +2505,10 @@
         refreshFreeRecordingControls("再生中 · 音符が鍵盤に届くと鳴ります");
       });
       document.getElementById("freeReplayStopButton").addEventListener("click", stopFreeTransport);
+      document.getElementById("freeVideoButton").addEventListener("click", () => {
+        if (state !== "free" || !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null) return;
+        window.OtoiroFreeVideo?.open({ events: freeRecording, notes: notes.map((_, lane) => getFreeNote(lane)), volume: settings.volume });
+      });
       document.addEventListener("visibilitychange", () => { if (document.hidden && state === "free") stopFreeTransport(); });
       document.getElementById("exitFreePlayButton").addEventListener("click", () => {
         stopGame();
@@ -2551,6 +2558,7 @@
       });
       window.addEventListener("keydown", (event) => {
         if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+        if (document.getElementById("freeVideoDialog").open) return;
         if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
         const index = keyboardShortcuts.indexOf(event.key.toLowerCase());
         if (index < 0) return;
