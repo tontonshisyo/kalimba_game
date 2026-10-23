@@ -1,11 +1,12 @@
 "use strict";
 
-const CACHE_NAME = "otoiro-shell-v79";
+const CACHE_NAME = "otoiro-shell-v80";
 const APP_FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./assets/css/style.css",
+  "./assets/js/sharing.js",
   "./assets/js/game.js",
   "./assets/js/feedback.js",
   "./assets/data/custom-charts.json",
