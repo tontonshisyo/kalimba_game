@@ -593,7 +593,7 @@
     .result-score > span { display: block; color: var(--muted); font-size: 12px; }
     .result-score strong { font-size: clamp(24px, 5vw, 42px); overflow-wrap: anywhere; }
     .result-score small { margin-left: 6px; }
-    .result-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 20px 0 0; }
+    .result-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin: 20px 0 0; }
     .result-stats > div { min-width: 0; background: #fffdf7; border-radius: 14px; padding: 14px; }
     .result-stats dt { font-size: 11px; color: var(--muted); }
     .result-stats dd { font-size: 24px; font-weight: 700; margin: 8px 0 0; overflow-wrap: anywhere; }
