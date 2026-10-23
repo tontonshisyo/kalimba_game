@@ -626,6 +626,8 @@
       .app:not(.is-playing) .playfield::before { left: 3%; }
       .app:not(.is-playing) .playfield::after { right: 3%; }
     }
+    .chart-sharing { border: 1px solid #dac4a8; border-radius: 12px; padding: 14px; background: #f6ead7; }
+    .chart-sharing [hidden] { display: none !important; }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
