@@ -233,11 +233,11 @@
               <div class="creator-actions">
                 <button class="creator-button creator-button-primary" id="prepareShareButton" type="button">共有リンクを作成</button>
                 <button class="creator-button" id="sendShareButton" type="button" hidden>SNSなどに共有</button>
-                <button class="creator-button" id="downloadShareButton" type="button" hidden>リンクをコピー</button>
+                <button class="creator-button" id="downloadShareButton" type="button" hidden>投稿文をコピー</button>
                 <input id="importShareFile" type="file" accept=".otoiro,.json,application/json,application/octet-stream" hidden>
               </div>
-              <input id="shareLinkOutput" class="share-link-output" type="text" readonly aria-label="共有リンク" hidden>
-              <p class="chart-help">譜面を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。</p>
+              <textarea id="shareLinkOutput" class="share-link-output" rows="4" readonly aria-label="共有投稿文" hidden></textarea>
+              <p class="chart-help">譜面を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。投稿文には #おといろ #カリンバ #音ゲー が含まれます。</p>
               <details><summary>以前の共有ファイルを読み込む</summary><button class="creator-button" id="importShareButton" type="button">ファイルを選択</button></details>
               <p id="shareStatus" class="chart-help" role="status" aria-live="polite"></p>
             </div>
