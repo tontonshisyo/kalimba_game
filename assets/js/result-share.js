@@ -126,11 +126,11 @@
       text(ctx, label, x + 24, 658, 25, color, 264);
       text(ctx, value.toLocaleString(), x + 22, 745, 66, "#493426", 268);
     });
-    [["最高コンボ", result.combo.toLocaleString()], ["タイミング", result.accuracy]].forEach(([label, value], i) => {
-      const x = 104 + i * 498;
-      box(ctx, x, 803, 478, 160, 22, "#f5ead9");
-      text(ctx, label, x + 24, 849, 25, "#80654f", 430, 500);
-      text(ctx, value, x + 22, 925, 56, "#704729", 434);
+    [["最高コンボ", result.combo.toLocaleString()], ["正確さ", result.accuracy], ["余計な音", (result.extra ?? 0).toLocaleString()]].forEach(([label, value], i) => {
+      const x = 104 + i * 332;
+      box(ctx, x, 803, 312, 160, 22, "#f5ead9");
+      text(ctx, label, x + 24, 849, 25, "#80654f", 264, 500);
+      text(ctx, value, x + 22, 925, 56, "#704729", 268);
     });
     ctx.strokeStyle = "#ddc5a7"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(104, 1006); ctx.lineTo(1096, 1006); ctx.stroke();
