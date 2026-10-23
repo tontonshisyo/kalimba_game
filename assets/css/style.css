@@ -635,7 +635,7 @@
     }
     .chart-sharing { border: 1px solid #dac4a8; border-radius: 12px; padding: 14px; background: #f6ead7; }
     .chart-sharing [hidden] { display: none !important; }
-    .share-link-output { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fffdf7; color: var(--text); font: 16px var(--sans); }
+    .share-link-output { width: 100%; min-height: 88px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fffdf7; color: var(--text); font: 16px var(--sans); resize: vertical; overflow-wrap: anywhere; }
     .shared-song-panel { padding: 18px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 16px; background: #f6ead7; }
     .shared-song-panel h2 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
     .shared-song-panel p { font-size: 13px; line-height: 1.7; }
