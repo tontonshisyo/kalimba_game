@@ -166,24 +166,63 @@
       let freeRecordStartedAt = null;
       let freeReplayStartedAt = null;
       let freeReplayCursor = 0;
+      let freeCountIn = false;
+      let freeCountInTimer = 0;
+      let freeMetronomeOn = false;
+      let freeMetronomeTimer = 0;
+      const freeMetronomeBpm = document.getElementById("freeMetronomeBpm");
+      const freeMetronomeButton = document.getElementById("freeMetronomeButton");
+
+      function stopFreeMetronome() {
+        window.clearTimeout(freeMetronomeTimer);
+        freeMetronomeOn = false;
+        freeMetronomeButton.textContent = "メトロノーム：OFF";
+        freeMetronomeButton.setAttribute("aria-pressed", "false");
+      }
+      function scheduleFreeMetronome(deadline = performance.now()) {
+        window.clearTimeout(freeMetronomeTimer);
+        if (!freeMetronomeOn || state !== "free" || freeCountIn) return;
+        if (!freeMetronomeBpm.checkValidity()) { stopFreeMetronome(); return; }
+        freeMetronomeTimer = window.setTimeout(() => {
+          if (!freeMetronomeOn || state !== "free" || freeCountIn) return;
+          playMetronome(false);
+          const next = deadline + 60000 / Number(freeMetronomeBpm.value);
+          scheduleFreeMetronome(Math.max(performance.now() + 20, next));
+        }, Math.max(0, deadline - performance.now()));
+      }
+      function prepareRecordingAudio() {
+        try {
+          if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          audioContext.resume().catch(() => {});
+        } catch {}
+      }
 
       function refreshFreeRecordingControls(message) {
-        document.getElementById("freeRecordButton").textContent = freeRecordStartedAt === null ? "録音を開始" : "録音を停止";
+        document.getElementById("freeRecordButton").textContent = freeCountIn ? "カウントダウンを中止" : freeRecordStartedAt === null ? "録音を開始" : "録音を停止";
         document.getElementById("freeRecordButton").disabled = freeReplayStartedAt !== null;
-        document.getElementById("freeReplayButton").disabled = !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
-        document.getElementById("freeVideoButton").disabled = !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
+        document.getElementById("freeReplayButton").disabled = freeCountIn || !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
+        document.getElementById("freeVideoButton").disabled = freeCountIn || !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null;
+        freeMetronomeButton.disabled = freeMetronomeBpm.disabled = freeCountIn || freeReplayStartedAt !== null;
         document.getElementById("freeReplayStopButton").hidden = freeReplayStartedAt === null;
         if (message) document.getElementById("freeRecordStatus").textContent = message;
       }
 
       function stopFreeTransport() {
+        const wasCountIn = freeCountIn;
+        freeCountIn = false;
+        window.clearTimeout(freeCountInTimer);
+        if (wasCountIn) {
+          document.getElementById("recordingCountdown").hidden = true;
+          app.classList.remove("is-counting");
+        }
         const wasRecording = freeRecordStartedAt !== null;
         const wasPlaying = freeReplayStartedAt !== null;
         freeRecordStartedAt = null;
         freeReplayStartedAt = null;
         freeNotes = [];
         clearPointerInteraction();
-        refreshFreeRecordingControls(wasRecording ? `録音しました（${freeRecording.length}音）` : wasPlaying ? "再生を停止しました" : undefined);
+        refreshFreeRecordingControls(wasCountIn ? "カウントダウンを中止しました" : wasRecording ? `録音しました（${freeRecording.length}音）` : wasPlaying ? "再生を停止しました" : undefined);
+        if (wasCountIn && freeMetronomeOn) scheduleFreeMetronome();
       }
 
       function updateFreeReplay(now) {
@@ -627,6 +666,7 @@
           gain.gain.exponentialRampToValueAtTime(Math.max(.0002, .16 * settings.volume / 100), now + .004);
           gain.gain.exponentialRampToValueAtTime(.0001, now + .045);
           oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
           oscillator.start(now);
           oscillator.stop(now + .05);
         } catch (error) {
@@ -639,20 +679,19 @@
         recordingTickTimer = window.setTimeout(() => {
           if (!isRecording) return;
           if (beatIndex < 4) {
-            playMetronome(beatIndex === 0);
-            recordingIndicator.textContent = `カウントイン ${beatIndex + 1}/4`;
+            playMetronome(false);
+            recordingIndicator.textContent = `録音開始まで ${4 - beatIndex}`;
+            document.getElementById("recordingCountdown").textContent = String(4 - beatIndex);
+            scheduleRecordingBeat(beatIndex + 1, deadline + recordingBeatDuration);
           } else {
-            if (beatIndex === 4) {
-              recordingStartedAt = deadline;
-              recordingIndicator.textContent = "録音中 · メトロノームに合わせて鍵盤を弾いてください";
-            }
-            playMetronome((beatIndex - 4) % 4 === 0);
+            recordingStartedAt = performance.now();
+            document.getElementById("recordingCountdown").hidden = true;
+            recordingIndicator.textContent = "録音中 · 終わったら「録音を止める」を押してください";
           }
-          scheduleRecordingBeat(beatIndex + 1, deadline + recordingBeatDuration);
         }, Math.max(0, deadline - performance.now()));
       }
 
-      function startRecording() {
+      function startRecording(prepared = false) {
         if (isRecording || state === "playing" || state === "paused" || state === "free") return;
         const title = creatorNameInput.value.trim();
         const bpm = Number(creatorBpmInput.value);
@@ -664,8 +703,9 @@
           showCreatorStatus("BPMは30〜240の整数で入力してください。", true);
           return;
         }
+        if (prepared !== true) { showRecordingReady(() => startRecording(true), bpm); return; }
         stopPreview();
-        if (audioContext && audioContext.state === "suspended") audioContext.resume();
+        prepareRecordingAudio();
         isRecording = true;
         updateKeyLabels();
         recordingStartedAt = Number.POSITIVE_INFINITY;
@@ -678,6 +718,8 @@
         app.classList.add("is-playing", "is-recording");
         recordingIndicator.hidden = false;
         recordingIndicator.textContent = "録音の準備中";
+        document.getElementById("recordingCountdown").hidden = false;
+        document.getElementById("recordingCountdown").textContent = "4";
         document.getElementById("gameStatus").textContent = "RECORDING";
         overlay.classList.add("hidden");
         resizeCanvas();
@@ -703,6 +745,7 @@
         window.clearTimeout(recordingTickTimer);
         app.classList.remove("is-playing", "is-recording");
         recordingIndicator.hidden = true;
+        document.getElementById("recordingCountdown").hidden = true;
         startRecordingButton.hidden = false;
         stopRecordingButton.hidden = true;
         document.getElementById("gameStatus").textContent = "待機中";
@@ -1536,6 +1579,7 @@
       function playKey(index) {
         if (isRecording) recordKeyPress(index);
         else if (state === "free") {
+          if (freeCountIn) return;
           if (freeReplayStartedAt !== null) return;
           playTone(index);
           keyButtons[index].classList.add("pressed");
@@ -2099,6 +2143,63 @@
       };
       portraitQuery.addEventListener("change", handleOrientationChange);
 
+      const recordingReadyDialog = document.getElementById("recordingReadyDialog");
+      let pendingRecordingStart = null;
+      function showRecordingReady(action, bpm) {
+        pendingRecordingStart = action;
+        document.getElementById("recordingReadyCopy").textContent = `横画面にすると鍵盤を押しやすくなります。準備ができたら「録音開始」を押してください。BPM ${bpm}で4・3・2・1と鳴った後に録音が始まります。縦画面のままでも続けられます。`;
+        recordingReadyDialog.showModal();
+      }
+      document.getElementById("confirmRecordingButton").addEventListener("click", () => {
+        const action = pendingRecordingStart;
+        pendingRecordingStart = null;
+        recordingReadyDialog.close();
+        action?.();
+      });
+      document.getElementById("cancelRecordingReadyButton").addEventListener("click", () => {
+        pendingRecordingStart = null;
+        recordingReadyDialog.close();
+      });
+      recordingReadyDialog.addEventListener("cancel", () => { pendingRecordingStart = null; });
+
+      function beginFreeRecording(prepared = false) {
+        if (state !== "free" || freeReplayStartedAt !== null) return;
+        const bpm = Number(freeMetronomeBpm.value);
+        if (!Number.isInteger(bpm) || bpm < 30 || bpm > 240) {
+          freeMetronomeBpm.reportValidity(); return;
+        }
+        if (prepared !== true) { showRecordingReady(() => beginFreeRecording(true), bpm); return; }
+        stopFreeTransport();
+        prepareRecordingAudio();
+        window.clearTimeout(freeMetronomeTimer);
+        freeCountIn = true;
+        app.classList.add("is-counting");
+        freeRecording = [];
+        document.getElementById("recordingCountdown").hidden = false;
+        document.getElementById("recordingCountdown").textContent = "4";
+        const beatDuration = 60000 / bpm;
+        const tick = (index, deadline) => {
+          freeCountInTimer = window.setTimeout(() => {
+            if (!freeCountIn || state !== "free") return;
+            if (index < 4) {
+              playMetronome(false);
+              refreshFreeRecordingControls(`録音開始まで ${4 - index}`);
+              document.getElementById("recordingCountdown").textContent = String(4 - index);
+              tick(index + 1, deadline + beatDuration);
+            } else {
+              freeCountIn = false;
+              app.classList.remove("is-counting");
+              document.getElementById("recordingCountdown").hidden = true;
+              freeRecordStartedAt = performance.now();
+              refreshFreeRecordingControls("録音中 · 終わったら「録音を停止」を押してください");
+              if (freeMetronomeOn) scheduleFreeMetronome();
+            }
+          }, Math.max(0, deadline - performance.now()));
+        };
+        refreshFreeRecordingControls("録音の準備中");
+        tick(0, performance.now() + 60);
+      }
+
       function startFreePlay(orientationAccepted = false) {
         if (isRecording || (state !== "ready" && state !== "finished")) return;
         if (orientationAccepted !== true && requestOrientation(() => startFreePlay(true))) return;
@@ -2286,7 +2387,7 @@
           document.getElementById("tutorialGuide").hidden = true;
           updateReadyBpm();
         }
-        if (state === "free") stopFreeTransport();
+        if (state === "free") { stopFreeMetronome(); stopFreeTransport(); }
         if (isTestPlay) {
           returnFromTestPlay("テストプレイを終了しました。譜面は保存されていません。");
           return;
@@ -2491,14 +2592,28 @@
       document.getElementById("freePlayButton").addEventListener("click", startFreePlay);
       document.getElementById("freeRecordButton").addEventListener("click", () => {
         if (state !== "free") return;
-        if (freeRecordStartedAt !== null) { stopFreeTransport(); return; }
-        stopFreeTransport();
-        freeRecording = [];
-        freeRecordStartedAt = performance.now();
-        refreshFreeRecordingControls("録音中 · 終わったら「録音を停止」を押してください");
+        if (freeCountIn || freeRecordStartedAt !== null) { stopFreeTransport(); return; }
+        beginFreeRecording();
+      });
+      freeMetronomeButton.addEventListener("click", () => {
+        if (state !== "free" || freeCountIn || freeReplayStartedAt !== null) return;
+        if (freeMetronomeOn) { stopFreeMetronome(); return; }
+        if (!freeMetronomeBpm.checkValidity()) { freeMetronomeBpm.reportValidity(); return; }
+        prepareRecordingAudio();
+        freeMetronomeOn = true;
+        freeMetronomeButton.textContent = "メトロノーム：ON";
+        freeMetronomeButton.setAttribute("aria-pressed", "true");
+        scheduleFreeMetronome();
+      });
+      freeMetronomeBpm.addEventListener("change", () => {
+        if (freeMetronomeOn) {
+          if (freeMetronomeBpm.checkValidity()) scheduleFreeMetronome();
+          else stopFreeMetronome();
+        }
       });
       document.getElementById("freeReplayButton").addEventListener("click", () => {
-        if (state !== "free" || !freeRecording.length || freeRecordStartedAt !== null) return;
+        if (state !== "free" || freeCountIn || !freeRecording.length || freeRecordStartedAt !== null) return;
+        stopFreeMetronome();
         stopFreeTransport();
         freeReplayCursor = 0;
         freeReplayStartedAt = performance.now() + travelTime * 1000;
@@ -2506,10 +2621,11 @@
       });
       document.getElementById("freeReplayStopButton").addEventListener("click", stopFreeTransport);
       document.getElementById("freeVideoButton").addEventListener("click", () => {
-        if (state !== "free" || !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null) return;
+        if (state !== "free" || freeCountIn || !freeRecording.length || freeRecordStartedAt !== null || freeReplayStartedAt !== null) return;
+        stopFreeMetronome();
         window.OtoiroFreeVideo?.open({ events: freeRecording, notes: notes.map((_, lane) => getFreeNote(lane)), volume: settings.volume });
       });
-      document.addEventListener("visibilitychange", () => { if (document.hidden && state === "free") stopFreeTransport(); });
+      document.addEventListener("visibilitychange", () => { if (document.hidden && state === "free") { stopFreeMetronome(); stopFreeTransport(); } });
       document.getElementById("exitFreePlayButton").addEventListener("click", () => {
         stopGame();
         document.getElementById("freePlayButton").focus();
@@ -2558,7 +2674,7 @@
       });
       window.addEventListener("keydown", (event) => {
         if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-        if (document.getElementById("freeVideoDialog").open) return;
+        if (document.getElementById("freeVideoDialog").open || recordingReadyDialog.open) return;
         if (event.target instanceof Element && event.target.closest("input, textarea, select")) return;
         const index = keyboardShortcuts.indexOf(event.key.toLowerCase());
         if (index < 0) return;
