@@ -114,6 +114,17 @@
   function base64(bytes) {
     return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
+  function publicBaseURL(pageURL = location.href) {
+    const configured = window.OTOIRO_PUBLIC_URL;
+    const url = configured ? new URL(configured) : new URL("./", pageURL);
+    if (!/^https?:$/.test(url.protocol) || (!configured && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(url.hostname))) {
+      throw new Error("共有リンクは公開サイトから作成してください。");
+    }
+    if (url.username || url.password) throw new Error("公開URLの設定が正しくありません。");
+    url.search = "";
+    url.hash = "";
+    return url.href;
+  }
   async function createLink(song) {
     if (!song.steps.length || song.steps.length > 2000) throw new Error("共有できる音符は1〜2000個です。");
     let raw = packSong(song);
@@ -123,7 +134,7 @@
       const compressed = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
       if (compressed.length < raw.length) { raw = compressed; type = type === "b" ? "g" : "z"; }
     }
-    const link = "https://tontonshisyo.github.io/kalimba_game/#song=1" + type + "." + base64(raw);
+    const link = publicBaseURL() + "#song=1" + type + "." + base64(raw);
     if (link.length > 8000) throw new Error("この曲は共有リンクが長すぎます。音符を減らすか、曲を分けてください。");
     return link;
   }
@@ -139,6 +150,6 @@
     const [name, bpm, keySignature, steps] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     return { name, bpm, keySignature, steps };
   }
-  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink });
+  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, publicBaseURL });
 })();
 
