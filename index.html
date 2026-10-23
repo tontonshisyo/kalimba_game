@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f7f3ea">
+  <meta name="theme-color" content="#f3e7d5">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="ぽろん、と音のひとやすみ。曲に合わせても、自由に弾いても楽しめる小さなカリンバ。">
+  <meta name="description" content="曲に合わせて練習できる17鍵カリンバ。フリー演奏・録音・曲の作成と投稿に対応。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/kalimba.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/kalimba.svg">
   <link rel="stylesheet" href="assets/css/style.css">
-  <title>おといろ — 小さなカリンバ</title>
+  <title>おといろ — 17鍵カリンバ</title>
 </head>
 <body>
   <div class="app">
     <section class="result-panel" id="resultPanel" aria-labelledby="resultTitle" tabindex="-1" hidden>
-      <div class="result-heading"><div><p class="eyebrow">RESULT</p><h2 id="resultTitle">演奏おつかれさま！</h2><p id="resultSong"></p></div><div class="result-score"><span>スコア</span><strong id="resultScore">0</strong><small>pt</small></div></div>
+      <div class="result-heading"><div><p class="eyebrow">RESULT</p><h2 id="resultTitle">演奏結果</h2><p id="resultSong"></p></div><div class="result-score"><span>スコア</span><strong id="resultScore">0</strong><small>pt</small></div></div>
       <dl class="result-stats">
         <div><dt>PERFECT</dt><dd id="resultPerfect">0</dd></div>
         <div><dt>GOOD</dt><dd id="resultGood">0</dd></div>
@@ -32,21 +32,21 @@
             <path d="M5 4v14M8 2v16M11 5v13M14 3v15M17 6v12M20 4v14"/><path d="M4 19h17"/>
           </svg>
         </div>
-        <div><div class="brand-name">おといろ</div><div class="brand-caption">小さなカリンバ</div></div>
+        <div><div class="brand-name">おといろ</div><div class="brand-caption">17鍵カリンバ</div></div>
       </div>
-      <div class="header-right"><span class="desktop-only">ぽろん、とひとやすみ。</span><span class="live-indicator"><i class="live-dot"></i> 音を楽しむ時間</span></div>
+      <div class="header-right"><span class="desktop-only">タッチ・キーボード対応</span><span class="live-indicator"><i class="live-dot"></i> ブラウザーで演奏</span></div>
     </header>
 
     <main class="layout">
       <section class="main-column" aria-label="ゲーム画面">
         <div class="section-top">
-          <div><div class="eyebrow">YOUR LITTLE KALIMBA</div><h1>音と、ひとやすみ。</h1><p class="subheading">曲に合わせても、自由に弾いても。自分のペースでどうぞ。</p></div>
+          <div><div class="eyebrow">KALIMBA</div><h1>カリンバを演奏する</h1><p class="subheading">曲に合わせて練習したり、自由に演奏できます。</p></div>
           <label class="sr-only" for="songSelect">練習曲を選択</label>
           <div class="selection-controls">
             <label class="practice-mode" for="practiceMode">
               <input id="practiceMode" type="checkbox">
-              <span>ゆっくり練習</span>
-              <small>弾くまで待ってくれる</small>
+              <span>練習モード</span>
+              <small>入力するまで曲が停止</small>
             </label>
             <select class="song-select" id="songSelect" aria-label="練習曲">
               <option value="twinkle">きらきら星 — やさしい</option>
@@ -67,11 +67,11 @@
             <canvas id="gameCanvas" aria-label="ノーツが流れるゲーム画面"></canvas>
             <div class="field-top">
               <div class="status-pill"><strong id="bpmValue">BPM 96</strong></div>
-              <div class="status-pill" id="gameStatus">ひとやすみ</div>
+              <div class="status-pill" id="gameStatus">待機中</div>
             </div>
             <div class="toast" id="toast" aria-live="polite"></div>
             <div class="game-hud">
-              <div class="hud-combo"><span>つながった音</span><strong id="hudCombo">0</strong></div>
+              <div class="hud-combo"><span>コンボ</span><strong id="hudCombo">0</strong></div>
               <button class="pause-button" id="pauseButton" type="button" aria-label="演奏を一時停止">一時停止</button>
               <button class="pause-button free-play-exit" id="exitFreePlayButton" type="button">ホームへ</button>
               <button class="stop-recording-button" id="stopRecordingButton" type="button" hidden>録音を止める</button>
@@ -86,16 +86,16 @@
                 <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
                 <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
               </div>
-              <p>鍵盤を自由に弾いてみよう<br>タッチ・スライド・キーボード（1〜0、Q〜U）で演奏</p>
+              <p>鍵盤を押すと音が鳴ります<br>タッチ・スライド・キーボード（1〜0、Q〜U）で演奏</p>
             </div>
             <div class="overlay" id="overlay">
               <div class="start-box">
-                <div class="start-icon" aria-hidden="true"><svg viewBox="0 0 180 150" fill="none"><ellipse cx="90" cy="137" rx="51" ry="7" fill="#546e5c" opacity=".1"/><path d="M52 23Q90 13 128 23L140 111Q141 131 121 133H59Q39 131 40 111Z" fill="#d7ac7e"/><path d="M57 28Q90 20 123 28L134 110Q136 126 120 127H60Q44 126 46 110Z" fill="#e5c39d"/><circle cx="90" cy="99" r="14" fill="#b4865d"/><circle cx="90" cy="99" r="9" fill="#8c694d"/><path d="M58 48H122" stroke="#896c53" stroke-width="6" stroke-linecap="round"/><g stroke="#fff8e9" stroke-width="7" stroke-linecap="round"><path d="M61 39V72M71 37V85M81 36V101M91 35V113M101 36V101M111 37V85M121 39V72"/></g><path d="M54 45H126" stroke="#ae8b69" stroke-width="4" stroke-linecap="round"/><path d="M22 54q12-1 12-13M147 68q10 4 15-6M142 22l4-6M25 92l-5 3" stroke="#8da58b" stroke-width="3" stroke-linecap="round"/><circle cx="33" cy="25" r="4" fill="#dba48d"/><circle cx="154" cy="98" r="3" fill="#dba48d"/></svg></div>
-                <h2 id="overlayTitle">今日は、どんな音にする？</h2>
-                <p id="overlayCopy">曲に合わせて、光る鍵盤をぽろん。<br>自由に弾きたいときは「フリー演奏」へ。</p>
+                <div class="start-icon" aria-hidden="true"><svg viewBox="0 0 180 150" fill="none"><ellipse cx="90" cy="137" rx="51" ry="7" fill="#806044" opacity=".1"/><path d="M52 23Q90 13 128 23L140 111Q141 131 121 133H59Q39 131 40 111Z" fill="#d7ac7e"/><path d="M57 28Q90 20 123 28L134 110Q136 126 120 127H60Q44 126 46 110Z" fill="#e5c39d"/><circle cx="90" cy="99" r="14" fill="#b4865d"/><circle cx="90" cy="99" r="9" fill="#8c694d"/><path d="M58 48H122" stroke="#896c53" stroke-width="6" stroke-linecap="round"/><g stroke="#fff8e9" stroke-width="7" stroke-linecap="round"><path d="M61 39V72M71 37V85M81 36V101M91 35V113M101 36V101M111 37V85M121 39V72"/></g><path d="M54 45H126" stroke="#ae8b69" stroke-width="4" stroke-linecap="round"/><path d="M22 54q12-1 12-13M147 68q10 4 15-6M142 22l4-6M25 92l-5 3" stroke="#b28a61" stroke-width="3" stroke-linecap="round"/><circle cx="33" cy="25" r="4" fill="#dba48d"/><circle cx="154" cy="98" r="3" fill="#dba48d"/></svg></div>
+                <h2 id="overlayTitle">演奏モードを選択</h2>
+                <p id="overlayCopy">曲を選んで「曲を演奏」を押してください。<br>譜面なしで弾く場合は「フリー演奏」。</p>
                 <p class="orientation-hint">スマホ・タブレットは横画面がおすすめです</p>
                 <div class="overlay-actions">
-                  <button class="primary-button" id="startButton">曲を弾く</button>
+                  <button class="primary-button" id="startButton">曲を演奏</button>
                   <button class="stop-button" id="freePlayButton" type="button">フリー演奏</button>
                   <button class="stop-button" id="stopButton" type="button" hidden>演奏をやめる</button>
                 </div>
@@ -144,13 +144,13 @@
         </details>
 
         <details class="free-tuning" id="freeTuningPanel">
-          <summary>フリー演奏の音づくり</summary>
+          <summary>フリー演奏の調整</summary>
           <div class="free-tuning-content">
             <label for="freeTuningMode">音の変え方
               <select id="freeTuningMode">
-                <option value="signature">ドレミの位置をそのままに、調を変える</option>
-                <option value="tonic">いちばん低い音から、全体を変える</option>
-                <option value="custom">鍵盤ひとつずつ、音を変える</option>
+                <option value="signature">配置を変えずに調号を適用</option>
+                <option value="tonic">最低音を指定して全体を移調</option>
+                <option value="custom">鍵盤ごとに音高を調整</option>
               </select>
             </label>
             <p id="freeTuningHelp"></p>
@@ -166,15 +166,15 @@
         </details>
 
         <section class="community-panel" aria-label="みんなの曲">
-          <h2>みんなの曲</h2>
-          <p>だれかの作った一曲に、出会ってみよう。</p>
+          <h2><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l11-2v12M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg>みんなの曲</h2>
+          <p>公開された曲を選んで演奏できます。</p>
           <button class="creator-button" id="communityRefreshButton" type="button">曲を更新</button>
           <div id="communitySongs"></div>
           <button class="creator-button" id="communityMoreButton" type="button" hidden>さらに読み込む</button>
           <p id="communityStatus" role="status">投稿機能を準備中です。</p>
         </section>
         <details class="beta-feedback">
-          <summary>おといろへのおたより · β</summary>
+          <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></svg>意見・不具合の報告 · β</summary>
           <form id="betaFeedbackForm">
             <p>感想、ほしい機能、不具合などを教えてください。送った内容と管理者の返信・対応状況は、みんなに公開されます。名前・メールアドレスは不要です。</p>
             <label for="feedbackCategory">種類<select id="feedbackCategory"><option value="idea">感想・アイデア</option><option value="bug">不具合の報告</option><option value="other">その他</option></select></label>
@@ -185,7 +185,7 @@
             <p id="feedbackStatus" role="status" aria-live="polite"></p>
           </form>
           <section class="feedback-board" aria-label="みんなの意見と対応状況">
-            <h3>届いたおたより</h3>
+            <h3>みんなの意見・対応状況</h3>
             <button class="creator-button" id="feedbackReload" type="button">一覧を更新</button>
             <div id="feedbackList"></div>
             <button class="creator-button" id="feedbackMore" type="button" hidden>さらに読み込む</button>
@@ -193,7 +193,7 @@
           </section>
         </details>
         <details class="creator-mode">
-          <summary>曲づくりのアトリエ</summary>
+          <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 11-11 4 4L9 19l-5 1 1-5ZM14 6l4 4M4 4h6M4 8h3"/></svg>曲を作成・投稿</summary>
           <div class="creator-content">
             <p class="creator-help">1行に「拍,音名」を1つ書きます。例：<code>0,C4</code>。拍は小数で入力でき、同じ拍の音は低い音から高い音へアルペジオで演奏し、一番高い音が拍に合います。<code>#</code>から行末まではメモとして無視されます。</p>
             <div class="creator-fields">
@@ -227,7 +227,7 @@
 6,G4</textarea>
             <p class="chart-help" id="creatorChartHelp">使える音：D6 B5 G5 E5 C5 A4 F4 D4 C4 E4 G4 B4 D5 F5 A5 C6 E6</p>
             <div class="creator-actions">
-              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>みんなに届ける</button>
+              <button class="creator-button creator-button-primary" id="publishSongButton" type="button" disabled>曲を公開</button>
               <span class="community-publish-help">投稿すると、曲名と譜面が誰でも遊べる状態で公開されます。公開してよい曲を投稿してください。</span>
               <button class="creator-button" id="loadChartButton" type="button">選択中の曲を更新</button>
               <button class="creator-button" id="saveChartButton" type="button">選択中の曲に保存</button>
@@ -272,18 +272,18 @@
           </div>
         </details>
 
-        <footer>おといろ · イヤホンでも、やさしい響きを。</footer>
+        <footer>17鍵カリンバ · タッチ・キーボード対応</footer>
       </section>
 
       <aside class="side-column" aria-label="あそびかた">
         <section class="panel">
           <div class="panel-heading"><h2>あそびかた</h2></div>
           <ol class="howto">
-            <li><span class="step-number">01</span><span>曲を選んで「曲を弾く」</span></li>
-            <li><span class="step-number">02</span><span>音符が下のラインに来たら、同じ音を弾こう</span></li>
-            <li><span class="step-number">03</span><span>ゆっくり練習なら、弾くまで待ってくれます</span></li>
+            <li><span class="step-number">01</span><span>曲を選んで「曲を演奏」</span></li>
+            <li><span class="step-number">02</span><span>音符が下のラインに来たら、同じ音を弾きます</span></li>
+            <li><span class="step-number">03</span><span>練習モードでは、入力するまで曲が停止します</span></li>
           </ol>
-          <div class="practice-tip">はじめてなら「ゆっくり練習」がおすすめ。音が出ないときは、端末の音量も確かめてみてね。</div>
+          <div class="practice-tip">練習モードでは、正しい音を弾くまで曲が停止します。音が出ない場合は端末の音量を確認してください。</div>
         </section>
       </aside>
     </main>
