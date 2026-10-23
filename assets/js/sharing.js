@@ -115,7 +115,7 @@
     return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
   function publicBaseURL(pageURL = location.href) {
-    const configured = window.OTOIRO_PUBLIC_URL;
+    const configured = window.OTOIRO_PUBLIC_URL || document.querySelector('meta[name="otoiro-public-url"]')?.content;
     const url = configured ? new URL(configured) : new URL("./", pageURL);
     if (!/^https?:$/.test(url.protocol) || (!configured && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(url.hostname))) {
       throw new Error("共有リンクは公開サイトから作成してください。");
