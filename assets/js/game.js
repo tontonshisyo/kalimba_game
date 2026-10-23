@@ -218,6 +218,17 @@
       let perfectCount = 0;
       let goodCount = 0;
       let missCount = 0;
+      let extraCount = 0;
+
+      function calculateScore() {
+        // Keep every penalty, even when the displayed score has reached zero.
+        return Math.max(0, perfectCount * 1000 + goodCount * 600 - extraCount * 500);
+      }
+
+      function performanceAccuracy() {
+        const total = judged + extraCount;
+        return total ? `${Math.round(accuracyPoints / total)}%` : "—%";
+      }
       let toastAnimation = null;
       let hitLine = 0;
 
@@ -1820,7 +1831,18 @@
         playTone(lane);
         keyButtons[lane].classList.add("pressed");
         window.setTimeout(() => keyButtons[lane].classList.remove("pressed"), 105);
-        if (!candidate) return;
+        if (!candidate) {
+          const firstTime = activeNotes[0]?.time;
+          const lastTime = activeNotes[activeNotes.length - 1]?.time;
+          if (elapsed >= firstTime - goodWindow && elapsed <= lastTime + goodWindow) {
+            extraCount++;
+            combo = 0;
+            score = calculateScore();
+            updateStats();
+            showToast("余計な音", "miss");
+          }
+          return;
+        }
 
         const { note, difference } = candidate;
         const wasWaiting = practiceMode;
@@ -1842,7 +1864,7 @@
         if (isPerfect) perfectCount++;
         else goodCount++;
         accuracyPoints += isPerfect ? 100 : 60;
-        score += isPerfect ? 1000 : 600;
+        score = calculateScore();
         effects.push({ lane, createdAt: performance.now() });
         updateStats();
         showToast(isPerfect ? "PERFECT" : "GOOD", isPerfect ? "" : "good");
@@ -2118,7 +2140,7 @@
         document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / runTempoScale)}`;
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
-        perfectCount = 0; goodCount = 0; missCount = 0;
+        perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
         document.getElementById("resultPanel").hidden = true;
         updateStats();
         startedAt = performance.now();
@@ -2158,7 +2180,7 @@
         activeNotes = createActiveNotes(chart, startBeat);
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
-        perfectCount = 0; goodCount = 0; missCount = 0;
+        perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
         document.getElementById("resultPanel").hidden = true;
         updateStats();
         startedAt = performance.now();
@@ -2274,12 +2296,13 @@
         document.getElementById("resultPerfect").textContent = perfectCount.toLocaleString();
         document.getElementById("resultGood").textContent = goodCount.toLocaleString();
         document.getElementById("resultMiss").textContent = missCount.toLocaleString();
+        document.getElementById("resultExtra").textContent = extraCount.toLocaleString();
         document.getElementById("resultCombo").textContent = bestCombo.toLocaleString();
-        document.getElementById("resultAccuracy").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
+        document.getElementById("resultAccuracy").textContent = performanceAccuracy();
         document.dispatchEvent(new CustomEvent("otoiro:result", { detail: {
           song: document.getElementById("resultSong").textContent,
-          score, perfect: perfectCount, good: goodCount, miss: missCount, combo: bestCombo,
-          accuracy: judged ? `${Math.round(accuracyPoints / judged)}%` : "—%",
+          score, perfect: perfectCount, good: goodCount, miss: missCount, extra: extraCount, combo: bestCombo,
+          accuracy: performanceAccuracy(),
           mode: practiceMode ? "練習モード" : "通常プレイ",
           bpm: Math.round(chart.bpm / runTempoScale)
         } }));
