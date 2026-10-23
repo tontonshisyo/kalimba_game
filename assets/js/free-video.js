@@ -160,7 +160,14 @@
     }
   }
   function validComment() {
-    comment.setCustomValidity(comment.value.trim() ? "" : "共有コメントを入力してください。");
+    const value = window.OtoiroSharing.withHashtags(comment.value.trim());
+    if (value.length > Number(comment.maxLength)) {
+      comment.setCustomValidity("ハッシュタグを含めて500文字以内にしてください。");
+      status.textContent = "共有コメントが長すぎます。短くしてください。";
+      return comment.reportValidity();
+    }
+    comment.value = value;
+    comment.setCustomValidity(value ? "" : "共有コメントを入力してください。");
     return comment.reportValidity();
   }
   make.addEventListener("click", generate);
@@ -187,7 +194,7 @@
     const last = Math.ceil(recording.events[recording.events.length - 1].time / 1000 * 10) / 10;
     const first = Math.floor(recording.events[0].time / 1000 * 10) / 10;
     startInput.max = endInput.max = String(Math.max(first + .1, last)); startInput.value = String(first); endInput.value = String(Math.min(first + 60, Math.max(first + .1, last)));
-    comment.value = "カリンバで演奏してみました！ あなたも弾いてみませんか？\nhttps://otoiro.pages.dev/\n#おといろ #カリンバ";
+    comment.value = "カリンバで演奏してみました！ あなたも弾いてみませんか？\nhttps://otoiro.pages.dev/\n#おといろ #カリンバ #音ゲー";
     comment.setCustomValidity(""); clearFile(); setBusy(false); make.disabled = !supported(); canvas.hidden = true;
     status.textContent = supported() ? "動画にする範囲を選んでください。作成中は演奏が流れ、動画と同じ長さの時間がかかります。" : "このブラウザーでは動画を作成できません。別のブラウザーでお試しください。";
     dialog.showModal();
