@@ -2,6 +2,10 @@
       "use strict";
 
       const keyboardShortcuts = ["1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","y","u"];
+      const removedBundledSongIds = new Set([
+        "user-classic-ode-to-joy", "user-classic-london-bridge", "user-classic-jingle-bells",
+        "user-classic-silent-night", "user-classic-oh-susanna"
+      ]);
       const cMajorKalimba = [
         { name: "D", octave: 6, semitones: 26, side: "left", color: "#9bc8ff" },
         { name: "B", octave: 5, semitones: 23, side: "left", color: "#b3bcfa" },
@@ -778,6 +782,7 @@
             (typeof entry.id === "string" && /^user-[a-zA-Z0-9-]{1,100}$/.test(entry.id))
           );
           if (!validId) throw new Error(`${index + 1}曲目: 曲IDが正しくありません。`);
+          if (removedBundledSongIds.has(entry.id)) continue;
           if (seenIds.has(entry.id)) throw new Error(`${index + 1}曲目: 曲IDが重複しています。`);
           seenIds.add(entry.id);
           const validated = parseCreatorChart(entry.name, entry.bpm, entry.source, entry.keySignature);
@@ -1179,6 +1184,7 @@
         const restored = [];
         for (const song of stored) {
           if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
+          if (removedBundledSongIds.has(song.id)) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
             const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature);
