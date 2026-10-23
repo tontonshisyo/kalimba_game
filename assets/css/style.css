@@ -502,6 +502,8 @@
     .practice-tip { background: #f3eddf; color: #79705b; border-radius: 12px; font-size: 11px; }
     .progress-track { background: #e2ceb2; height: 5px; }
     footer { color: var(--muted); font-size: 11px; margin: 26px 0 10px; }
+    .app:not(.is-playing) .home-footer { display: block; }
+    .home-footer a { display: inline-flex; align-items: center; min-height: 44px; color: #80502e; text-underline-offset: 3px; }
     .app.is-playing .game-card { background: #e5d2b4; border-color: #ceba9c; border-radius: 20px; }
     .app.is-playing .key-row { background: #ac8864; border-color: #987455; border-radius: 14px; }
     .app.is-playing .key { background: linear-gradient(90deg, #eee9db, #fffdf4 45%, #e1dccf); border-color: #b8ac94; color: #65503d; }
