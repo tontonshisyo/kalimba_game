@@ -2,12 +2,9 @@
 .creator-mode {
   display: none !important;
 }
-.app.community-enabled:not(.is-playing) .creator-mode { display: block !important; }
+.app:not(.is-playing) .creator-mode { display: block !important; }
 .creator-mode #connectProjectButton,
 .creator-mode #exportMobileAppButton,
-.creator-mode #saveChartButton,
-.creator-mode #saveNewChartButton,
-.creator-mode #deleteChartButton,
 .creator-mode .project-folder-help,
 .creator-mode .creator-file-actions { display: none !important; }
 .creator-mode .portable-export-help { display: none !important; }
