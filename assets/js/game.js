@@ -2092,14 +2092,15 @@
         ctx.save();
         ctx.lineCap = "round";
         for (const note of activeNotes) {
-          const next = note.slideNext;
-          if (!next || !note.spawned || !next.spawned || note.missed || next.missed || (note.hit && next.hit)) continue;
-          const depth = value => value.hit ? 1 : Math.min(1, Math.max(0, (elapsed - (value.time - runTravelTime)) / runTravelTime));
-          const fromDepth = depth(note), toDepth = depth(next);
-          const from = geometry.lanePoint(note.lane, fromDepth), to = geometry.lanePoint(next.lane, toDepth);
-          ctx.strokeStyle = "rgba(255, 224, 166, .82)";
-          ctx.lineWidth = 2 + Math.min(fromDepth, toDepth) * 2;
-          ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+          for (const next of note.slideTargets || []) {
+            if (!note.spawned || !next.spawned || note.missed || next.missed || (note.hit && next.hit)) continue;
+            const depth = value => value.hit ? 1 : Math.min(1, Math.max(0, (elapsed - (value.time - runTravelTime)) / runTravelTime));
+            const fromDepth = depth(note), toDepth = depth(next);
+            const from = geometry.lanePoint(note.lane, fromDepth), to = geometry.lanePoint(next.lane, toDepth);
+            ctx.strokeStyle = "rgba(255, 224, 166, .82)";
+            ctx.lineWidth = 2 + Math.min(fromDepth, toDepth) * 2;
+            ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+          }
         }
         ctx.restore();
       }
@@ -2118,17 +2119,27 @@
             hit: false,
             missed: false
           })).sort((a, b) => a.time - b.time || notes[a.lane].semitones - notes[b.lane].semitones);
-        const hands = new Map();
+        const hands = new Map(), beats = new Map();
         for (const note of result) {
           const key = `${note.step}:${note.handSide}`;
           if (!hands.has(key)) hands.set(key, []);
           hands.get(key).push(note);
+          if (!beats.has(note.step)) beats.set(note.step, []);
+          beats.get(note.step).push(note);
         }
         for (const hand of hands.values()) {
           hand.sort((a, b) => a.handIndex - b.handIndex);
           for (let i = 1; i < hand.length; i++) {
             const previous = hand[i - 1], current = hand[i];
-            if (Math.abs(previous.lane - current.lane) === 1) previous.slideNext = current;
+            if (Math.abs(previous.lane - current.lane) === 1) previous.slideTargets = [current];
+          }
+        }
+        for (const beat of beats.values()) {
+          const center = beat.find(note => notes[note.lane].side === "center");
+          if (!center) continue;
+          center.slideTargets ||= [];
+          for (const neighbor of beat) {
+            if (Math.abs(center.lane - neighbor.lane) === 1 && !center.slideTargets.includes(neighbor)) center.slideTargets.push(neighbor);
           }
         }
         return result;
