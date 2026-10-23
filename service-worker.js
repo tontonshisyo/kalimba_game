@@ -1,19 +1,22 @@
 "use strict";
 
-const CACHE_NAME = "otoiro-shell-v91";
+const CACHE_NAME = "otoiro-shell-v92";
 // Deploy the compact-link sharing UI and receiver together.
 const APP_FILES = [
   "./",
   "./index.html",
+  "./about.html",
   "./manifest.webmanifest",
   "./assets/css/style.css",
+  "./assets/css/about.css",
   "./assets/js/sharing.js",
   "./assets/js/result-share.js",
   "./assets/js/song-library.js",
   "./assets/js/game.js",
   "./assets/js/feedback.js",
   "./assets/data/custom-charts.json",
-  "./assets/icons/kalimba.svg"
+  "./assets/icons/kalimba.svg",
+  "./assets/icons/wood-music.svg"
 ];
 
 self.addEventListener("install", (event) => {
