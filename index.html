@@ -120,6 +120,7 @@
               <div class="free-record-controls">
                 <button class="creator-button" id="freeRecordButton" type="button">録音を開始</button>
                 <button class="creator-button" id="freeReplayButton" type="button" disabled>録音を再生</button>
+                <button class="creator-button" id="freeVideoButton" type="button" disabled>動画を作成</button>
                 <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
                 <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
               </div>
@@ -338,6 +339,18 @@
       <button id="orientationCancel" class="creator-button" type="button">やめておく</button>
     </div>
   </dialog>
+  <dialog id="freeVideoDialog" class="orientation-dialog free-video-dialog" aria-labelledby="freeVideoTitle">
+    <h2 id="freeVideoTitle">録音から動画を作成</h2>
+    <p>上に流れる音符と演奏音を、縦長の動画にします。演奏範囲は最長60秒で、最後に約3秒の余韻が付きます。</p>
+    <div class="free-video-range"><label>開始（秒）<input id="freeVideoStart" type="number" min="0" step="0.1" value="0"></label><label>終了（秒）<input id="freeVideoEnd" type="number" min="0.1" step="0.1" value="1"></label></div>
+    <div class="orientation-actions"><button class="primary-button" id="makeFreeVideoButton" type="button">動画を作成</button><button class="creator-button" id="cancelFreeVideoButton" type="button" hidden>作成を中止</button></div>
+    <p id="freeVideoStatus" role="status" aria-live="polite"></p>
+    <canvas id="freeVideoCanvas" width="720" height="900" aria-label="作成中の演奏動画" hidden></canvas>
+    <video id="freeVideoPreview" controls playsinline preload="metadata" aria-label="演奏動画のプレビュー" hidden></video>
+    <label class="free-video-comment" for="freeVideoComment">共有コメント<textarea id="freeVideoComment" rows="3" maxlength="500" required></textarea></label>
+    <div class="orientation-actions"><button class="creator-button" id="shareFreeVideoButton" type="button" hidden>動画とコメントを共有</button><button class="creator-button" id="saveFreeVideoButton" type="button" hidden>動画を保存</button><button class="creator-button" id="copyFreeVideoComment" type="button">コメントをコピー</button><button class="creator-button" id="closeFreeVideoButton" type="button">閉じる</button></div>
+    <p class="chart-help">共有先によって対応形式やコメントの扱いが異なります。必要に応じて動画を保存し、コメントをコピーして投稿してください。</p>
+  </dialog>
   <script src="assets/js/sharing.js" defer></script>
   <dialog id="tutorialDialog" class="orientation-dialog" aria-labelledby="tutorialTitle" aria-describedby="tutorialCopy">
     <h2 id="tutorialTitle">チュートリアル</h2>
@@ -355,6 +368,8 @@
   <script src="assets/js/result-share.js" defer></script>
   <script src="assets/js/song-library.js" defer></script>
   <script src="assets/js/game.js" defer></script>
+
+  <script src="assets/js/free-video.js" defer></script>
   <script src="assets/js/feedback.js" defer></script>
 </body>
 </html>
