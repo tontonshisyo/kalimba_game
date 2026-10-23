@@ -5,11 +5,53 @@
   const retryButton = document.getElementById("retryResultImageButton");
   const preview = document.getElementById("resultImagePreview");
   const status = document.getElementById("resultImageStatus");
+  const commentInput = document.getElementById("resultShareComment");
+  const openXButton = document.getElementById("openResultXButton");
   let latestResult = null;
   let imageFile = null;
   let previewURL = null;
   let generation = 0;
   const font = '"Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
+
+  function defaultComment(result) {
+    let url = "https://otoiro.pages.dev/";
+    try { url = window.OtoiroSharing.publicBaseURL(); } catch {}
+    const mode = result.mode === "練習モード" ? "（練習モード）" : "";
+    return `「${result.song}」で${result.score.toLocaleString()}点！${mode}\nあなたもカリンバに挑戦してみませんか？\n${url}\n#おといろ #カリンバ`;
+  }
+  function getComment() {
+    const value = commentInput.value.trim();
+    commentInput.setCustomValidity(value ? "" : "投稿コメントを入力してください。");
+    if (!value) {
+      status.textContent = "コメントを入力するか、「例文に戻す」を押してください。";
+      commentInput.focus();
+      commentInput.reportValidity();
+      return null;
+    }
+    return value;
+  }
+  commentInput.addEventListener("input", () => commentInput.setCustomValidity(""));
+  document.getElementById("resetResultCommentButton").addEventListener("click", () => {
+    if (!latestResult) return;
+    commentInput.value = defaultComment(latestResult);
+    commentInput.setCustomValidity("");
+    status.textContent = "得点入りの例文に戻しました。";
+  });
+  document.getElementById("copyResultCommentButton").addEventListener("click", async () => {
+    const comment = getComment();
+    if (!comment) return;
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(comment);
+      else {
+        commentInput.focus(); commentInput.select();
+        if (!document.execCommand("copy")) throw new Error("copy unavailable");
+      }
+      status.textContent = "コメントをコピーしました。SNSの投稿画面に貼り付けられます。";
+    } catch {
+      commentInput.focus(); commentInput.select();
+      status.textContent = "コメントを選択しました。長押しなどでコピーしてください。";
+    }
+  });
 
   function box(ctx, x, y, width, height, radius, fill) {
     ctx.beginPath();
@@ -99,13 +141,18 @@
     const blob = await new Promise((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("画像を作成できませんでした。")), "image/png"));
     return new File([blob], "otoiro-result.png", { type: "image/png" });
   }
-  async function prepare(result) {
+  async function prepare(result, resetComment = true) {
     latestResult = { ...result };
     const snapshot = latestResult;
+    if (resetComment) {
+      commentInput.value = defaultComment(snapshot);
+      commentInput.setCustomValidity("");
+    }
     const current = ++generation;
     imageFile = null;
     shareButton.disabled = true;
     saveButton.disabled = true;
+    openXButton.disabled = true;
     retryButton.hidden = true;
     preview.hidden = true;
     if (previewURL) { URL.revokeObjectURL(previewURL); previewURL = null; }
@@ -118,11 +165,12 @@
       preview.src = previewURL;
       preview.hidden = false;
       let canShare = false;
-      try { canShare = !!(navigator.share && navigator.canShare?.({ files: [file] })); } catch {}
+      try { canShare = !!(navigator.share && navigator.canShare?.({ files: [file], text: commentInput.value, title: "おといろの演奏結果" })); } catch {}
       shareButton.hidden = !canShare;
       shareButton.disabled = false;
       saveButton.disabled = false;
-      status.textContent = canShare ? "画像を共有、または保存できます。" : "画像を保存してSNSに投稿できます。";
+      openXButton.disabled = false;
+      status.textContent = canShare ? "画像とコメントをセットで共有できます。" : "画像を保存し、コメントをコピーしてSNSに投稿できます。";
     } catch {
       if (current !== generation) return;
       retryButton.hidden = false;
@@ -131,15 +179,26 @@
   }
   shareButton.addEventListener("click", async () => {
     if (!imageFile) return;
-    try { await navigator.share({ files: [imageFile], title: "おといろの演奏結果", text: "おといろで「" + latestResult.song + "」を演奏しました。" }); }
+    const comment = getComment();
+    if (!comment) return;
+    try { await navigator.share({ files: [imageFile], title: "おといろの演奏結果", text: comment }); }
     catch (error) { if (error.name !== "AbortError") status.textContent = "共有できませんでした。「画像を保存」からSNSに投稿してください。"; }
   });
   saveButton.addEventListener("click", () => {
     if (!imageFile) return;
     window.OtoiroSharing.download(imageFile);
-    status.textContent = "保存した画像をSNSに投稿できます。保存できない場合はプレビュー画像を長押ししてください。";
+    status.textContent = "画像を保存したら、コメントをコピーして投稿してください。Xでは「コメント付きでXを開く」から画像を添付できます。";
   });
-  retryButton.addEventListener("click", () => { if (latestResult) prepare(latestResult); });
+  openXButton.addEventListener("click", () => {
+    if (!imageFile) return;
+    const comment = getComment();
+    if (!comment) return;
+    const intent = new URL("https://twitter.com/intent/tweet");
+    intent.searchParams.set("text", comment);
+    window.open(intent.href, "_blank", "noopener,noreferrer");
+    status.textContent = "Xの投稿画面で、保存したリザルト画像を添付してください。コメントは入力済みです。";
+  });
+  retryButton.addEventListener("click", () => { if (latestResult) prepare(latestResult, false); });
   document.addEventListener("otoiro:result", event => prepare(event.detail));
   window.OtoiroResultImage = Object.freeze({ render: renderImage });
 })();
