@@ -8,7 +8,8 @@ $html = [System.IO.File]::ReadAllText((Join-Path $projectRoot "index.html"), [Sy
 $css = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/css/style.css"), [System.Text.Encoding]::UTF8)
 $javascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/game.js"), [System.Text.Encoding]::UTF8)
 $sharingJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/sharing.js"), [System.Text.Encoding]::UTF8)
-$javascript = $sharingJavascript + "`n" + $javascript
+$resultShareJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/result-share.js"), [System.Text.Encoding]::UTF8)
+$javascript = $sharingJavascript + "`n" + $resultShareJavascript + "`n" + $javascript
 $chartPack = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/data/custom-charts.json"), [System.Text.Encoding]::UTF8) | ConvertFrom-Json
 $embeddedCharts = ConvertTo-Json -InputObject @{ songs = @($chartPack.songs) } -Depth 100 -Compress
 $embeddedCharts = $embeddedCharts.Replace("<", "\u003c")
@@ -25,6 +26,7 @@ $html = [regex]::Replace($html, '(?is)<p\s+class="project-folder-help">.*?</p>',
 $html = [regex]::Replace($html, '(?is)<details\s+class="beta-feedback">.*?</details>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/feedback\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/sharing\.js"\s+defer></script>', "")
+$html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/result-share\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<button[^>]*id="exportMobileAppButton"[^>]*>.*?</button>', "")
 $html = [regex]::Replace($html, '(?is)\A\s*<!doctype html>\s*', "")
 $html = $html -replace '(?is)</head>', "<style>`n$css`n</style>`n</head>"
