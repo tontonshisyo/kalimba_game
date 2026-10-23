@@ -208,7 +208,7 @@
       let recordingTickTimer = 0;
       let startedAt = 0;
       let pausedAt = 0;
-      let preparedShareFile = null;
+      let preparedShareLink = null;
       let score = 0;
       let combo = 0;
       let bestCombo = 0;
@@ -1214,7 +1214,7 @@
         songNames[id] = validated.name;
         refreshSongOptions(id);
         loadSelectedSongIntoEditor();
-        showCreatorStatus(`「${validated.name}」をこのブラウザーに保存しました。ほかの端末へは共有ファイルで渡せます。`);
+        showCreatorStatus(`「${validated.name}」をこのブラウザーに保存しました。共有リンクでほかの端末にも渡せます。`);
       }
 
       async function removeSelectedCreatorSong() {
@@ -1233,7 +1233,7 @@
 
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
-      restoreProjectSongs();
+      const initialProjectRestore = restoreProjectSongs();
       function loadSettings() {
         try {
           const stored = JSON.parse(localStorage.getItem(settingsStorageKey) || "{}");
@@ -2230,41 +2230,105 @@
       const sendShareButton = document.getElementById("sendShareButton");
       const downloadShareButton = document.getElementById("downloadShareButton");
       const shareStatus = document.getElementById("shareStatus");
+      const shareLinkOutput = document.getElementById("shareLinkOutput");
       function invalidateShareFile() {
-        if (!preparedShareFile) return;
-        preparedShareFile = null;
+        if (!preparedShareLink) return;
+        preparedShareLink = null;
         sendShareButton.hidden = true;
         downloadShareButton.hidden = true;
-        shareStatus.textContent = "曲が変更されました。共有ファイルを作り直してください。";
+        shareLinkOutput.hidden = true;
+        shareLinkOutput.value = "";
+        shareStatus.textContent = "曲が変更されました。共有リンクを作り直してください。";
       }
       prepareShareButton.addEventListener("click", async () => {
         if (!["ready", "finished"].includes(state)) return;
-        preparedShareFile = null;
-        sendShareButton.hidden = true;
-        downloadShareButton.hidden = true;
+        invalidateShareFile();
         prepareShareButton.disabled = true;
-        shareStatus.textContent = "共有ファイルを作成しています…";
+        shareStatus.textContent = "共有リンクを作成しています…";
         const snapshot = [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n");
         try {
           const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
-          const song = { id: "user-share-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), name: parsed.name, bpm: parsed.bpm, keySignature: parsed.keySignature, source: chartToSource(parsed) };
-          const file = await window.OtoiroSharing.encode(createChartPack([song]), parsed.name);
-          if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n")) throw new Error("曲が変更されました。共有ファイルを作り直してください。");
-          preparedShareFile = file;
+          const link = await window.OtoiroSharing.createLink(parsed);
+          if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
+          preparedShareLink = link;
+          shareLinkOutput.value = link;
+          shareLinkOutput.hidden = false;
           downloadShareButton.hidden = false;
-          sendShareButton.hidden = !(navigator.share && navigator.canShare?.({ files: [file] }));
-          shareStatus.textContent = `共有ファイルを作成しました（${Math.max(1, Math.ceil(file.size / 1024))}KB）。保存するか、共有先を選んで送ってください。`;
+          sendShareButton.hidden = typeof navigator.share !== "function";
+          shareStatus.textContent = "リンクをコピーするか、共有先を選んで投稿してください。" + (link.length > 2000 ? " リンクが長めです。末尾まで含まれていることを確認してください。" : "");
         } catch (error) { shareStatus.textContent = error.message; }
         finally { prepareShareButton.disabled = false; }
       });
       sendShareButton.addEventListener("click", async () => {
-        if (!preparedShareFile) return;
-        try { await navigator.share({ files: [preparedShareFile], title: creatorNameInput.value }); }
-        catch (error) { if (error.name !== "AbortError") shareStatus.textContent = "共有できませんでした。「ファイルを保存」から渡してください。"; }
+        if (!preparedShareLink) return;
+        try { await navigator.share({ url: preparedShareLink, title: creatorNameInput.value, text: "おといろで「" + creatorNameInput.value + "」を演奏" }); }
+        catch (error) { if (error.name !== "AbortError") shareStatus.textContent = "共有できませんでした。「リンクをコピー」からSNSに貼り付けてください。"; }
       });
-      downloadShareButton.addEventListener("click", () => {
-        if (preparedShareFile) window.OtoiroSharing.download(preparedShareFile);
+      downloadShareButton.addEventListener("click", async () => {
+        if (!preparedShareLink) return;
+        try {
+          if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(preparedShareLink);
+          else {
+            shareLinkOutput.focus();
+            shareLinkOutput.select();
+            if (!document.execCommand("copy")) throw new Error("copy unavailable");
+          }
+          shareStatus.textContent = "共有リンクをコピーしました。SNSやメッセージに貼り付けてください。";
+        } catch {
+          shareLinkOutput.focus();
+          shareLinkOutput.select();
+          shareStatus.textContent = "リンクを選択しました。長押しなどでコピーしてください。";
+        }
       });
+      shareLinkOutput.addEventListener("click", () => shareLinkOutput.select());
+      let sharedSongId = null;
+      let sharedLinkSequence = 0;
+      async function loadSharedSong() {
+        if (!location.hash.startsWith("#song=") || !["ready", "finished"].includes(state)) return;
+        const sequence = ++sharedLinkSequence;
+        const hash = location.hash;
+        const panel = document.getElementById("sharedSongPanel");
+        const status = document.getElementById("sharedSongStatus");
+        const play = document.getElementById("playSharedSongButton");
+        const save = document.getElementById("saveSharedSongButton");
+        panel.hidden = false;
+        play.hidden = true;
+        save.hidden = true;
+        status.textContent = "共有された曲を読み込んでいます…";
+        try {
+          const data = await window.OtoiroSharing.readLink(hash);
+          if (sequence !== sharedLinkSequence || hash !== location.hash || !["ready", "finished"].includes(state)) return;
+          if (!Array.isArray(data.steps) || data.steps.length < 1 || data.steps.length > 2000) throw new Error("invalid notes");
+          const source = data.steps.map(item => {
+            if (!Array.isArray(item) || item.length !== 2 || !Number.isFinite(item[0]) || item[0] < 0 || item[0] > 20000 || !Number.isInteger(item[1]) || item[1] < 0 || item[1] >= notes.length) throw new Error("invalid note");
+            const note = notes[item[1]];
+            return (item[0] / 2) + "," + note.name + note.octave;
+          }).join("\n");
+          const parsed = parseCreatorChart(data.name, data.bpm, source, data.keySignature);
+          if (sharedSongId && !makerSongs.some(song => song.id === sharedSongId)) { delete charts[sharedSongId]; delete songNames[sharedSongId]; }
+          sharedSongId = "user-link-" + Date.now() + "-" + sequence;
+          charts[sharedSongId] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature };
+          songNames[sharedSongId] = parsed.name;
+          refreshSongOptions(sharedSongId);
+          loadSelectedSongIntoEditor();
+          document.getElementById("sharedSongTitle").textContent = "共有された曲：" + parsed.name;
+          status.textContent = "この曲を演奏できます。あとで演奏する場合は「この端末に保存」を押してください。";
+          play.hidden = false;
+          save.hidden = false;
+        } catch {
+          if (sequence !== sharedLinkSequence) return;
+          document.getElementById("sharedSongTitle").textContent = "共有リンクを読み込めません";
+          status.textContent = "リンクが途中で切れていないか確認してください。";
+        }
+      }
+      document.getElementById("playSharedSongButton").addEventListener("click", startGame);
+      document.getElementById("saveSharedSongButton").addEventListener("click", async () => {
+        await saveCreatorSong(true);
+        document.getElementById("sharedSongStatus").textContent = creatorStatus.textContent;
+      });
+      initialProjectRestore.catch(() => {}).then(loadSharedSong);
+      window.addEventListener("hashchange", loadSharedSong);
+
       document.getElementById("importShareButton").addEventListener("click", () => document.getElementById("importShareFile").click());
       document.getElementById("importShareFile").addEventListener("change", async (event) => {
         const [file] = event.target.files;
@@ -2336,6 +2400,7 @@
       });
       document.addEventListener("visibilitychange", handlePageVisibilityChange);
       document.getElementById("songSelect").addEventListener("change", (event) => {
+        if (event.target.value !== sharedSongId) document.getElementById("sharedSongPanel").hidden = true;
         chart = charts[event.target.value];
         updateReadyBpm();
         loadSelectedSongIntoEditor();
