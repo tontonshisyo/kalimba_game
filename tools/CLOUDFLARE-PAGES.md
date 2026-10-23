@@ -20,6 +20,8 @@ Cloudflare側でPagesプロジェクトの作成とGitHubリポジトリへの�
 
 ## 共有リンク
 
+現在の正規URLは https://otoiro.pages.dev/ です。index.html の otoiro-public-url メタタグに指定しているため、旧GitHubサイトからも新しい共有リンクはこのURLで作成されます。再移転時はこのメタタグを変更してください。
+
 共有リンクは開いているサイトのURLを使います。Cloudflare Pagesや独自ドメインで開くと、そのURLで生成されます。
 GitHub Pagesで開いた画面ではGitHub PagesのURLになります。固定の正規URLが必要な場合は window.OTOIRO_PUBLIC_URL に指定できます。
 ローカルファイル・localhostでの共有リンク生成には公開URLの設定が必要です。
