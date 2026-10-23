@@ -642,6 +642,58 @@
     .result-comment label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
     .result-comment label small { color: var(--muted); font-weight: 400; margin-left: 8px; }
     .result-comment textarea { display: block; width: 100%; min-height: 120px; resize: vertical; padding: 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fffdf7; color: var(--text); font: 16px/1.6 var(--sans); }
+    .song-select[hidden], .app.is-playing .song-library { display: none !important; }
+    .song-library { padding: 22px; margin: 0 0 24px; border: 1px solid #d7bb97; border-radius: 24px; background: linear-gradient(135deg, #fffaf1, #f1e2cd); }
+    .song-library-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .song-library-heading .eyebrow { display: block; margin-bottom: 5px; font-size: 9px; }
+    .song-library-heading h2 { margin: 0; font-size: 20px; letter-spacing: .04em; }
+    .song-library-symbol { font-size: 38px; line-height: 1; color: #b88a5b; }
+    .song-library-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-bottom: 14px; }
+    .song-library-tools input, .song-library-tools select { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #dbc5a8; border-radius: 12px; background: #fffdf8; color: var(--text); font: 16px var(--sans); }
+    .song-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; max-height: 352px; overflow-y: auto; overscroll-behavior: contain; padding: 4px; margin: -4px; }
+    .song-card { --difficulty-color: #8a7148; position: relative; display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; min-width: 0; min-height: 152px; padding: 16px; border: 2px solid #e4d1b7; border-radius: 18px; background: #fffdf7; color: var(--text); text-align: left; cursor: pointer; box-shadow: 0 3px 0 #dec5a32b; }
+    .song-card[data-level="1"] { --difficulty-color: #a87930; }
+    .song-card[data-level="2"] { --difficulty-color: #a45f39; }
+    .song-card[data-level="3"] { --difficulty-color: #854844; }
+    .song-card:hover:not(:disabled) { border-color: #be986d; background: #fff8e9; }
+    .song-card[aria-pressed="true"] { border-color: #94633d; background: #f9edd8; box-shadow: inset 0 0 0 1px #fff7e7, 0 3px 0 #94633d22; }
+    .song-card-art { display: grid; place-items: center; align-self: start; width: 48px; height: 58px; border-radius: 12px 12px 18px 18px; background: radial-gradient(circle at 45% 35%, #e9cda5, #c69a68); color: #fffaf0; font-size: 35px; text-shadow: 0 2px #98673e55; border: 1px solid #cda779; }
+    .song-card-info { display: flex; flex-direction: column; gap: 6px; padding-right: 10px; min-width: 0; }
+    .song-card-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font-size: 15px; line-height: 1.5; }
+    .song-card-meta, .song-card-density { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .song-card-footer { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .song-difficulty { padding: 4px 9px; border-radius: 20px; color: var(--difficulty-color); background: #f2e6d4; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .song-difficulty-meter { display: inline-flex; align-items: end; gap: 3px; height: 18px; }
+    .song-difficulty-meter i { display: block; width: 6px; height: 6px; border-radius: 2px; background: #e6d8c6; }
+    .song-difficulty-meter i:nth-child(2) { height: 10px; }
+    .song-difficulty-meter i:nth-child(3) { height: 14px; }
+    .song-difficulty-meter i:nth-child(4) { height: 18px; }
+    .song-difficulty-meter i.filled { background: var(--difficulty-color); }
+    .song-card-check { position: absolute; top: 9px; right: 9px; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; text-align: center; line-height: 18px; color: #fffaf0; }
+    .song-card[aria-pressed="true"] .song-card-check { background: #94633d; }
+    .song-library-selection { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+    .song-library-selection p { margin: 0; min-width: 0; overflow-wrap: anywhere; font-size: 12px; flex: 1 1 180px; }
+    .song-difficulty-help { margin-top: 14px; color: var(--muted); font-size: 11px; line-height: 1.8; }
+    .song-difficulty-help summary { cursor: pointer; }
+    .song-difficulty-help p { margin-bottom: 0; }
+    @media (max-width: 720px) {
+      .song-library { padding: 15px; border-radius: 18px; }
+      .song-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-height: 330px; }
+      .song-card { grid-template-columns: 34px minmax(0, 1fr); gap: 9px; padding: 12px; min-height: 148px; border-radius: 14px; }
+      .song-card-art { width: 34px; height: 45px; font-size: 28px; border-radius: 9px 9px 13px 13px; }
+      .song-card-title { font-size: 13px; }
+      .song-card-info { padding-right: 2px; }
+      .song-card-check { top: 5px; right: 5px; width: 14px; height: 14px; font-size: 10px; line-height: 14px; }
+      .song-card-meta, .song-card-density { font-size: 10px; }
+      .song-difficulty { font-size: 10px; padding-inline: 7px; }
+      .song-library-tools { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .song-library-tools input, .song-library-tools select { font-size: 16px; padding-inline: 9px; }
+      .song-library-selection .creator-button { width: 100%; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .song-cards { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); max-height: 240px; }
+      .song-library { padding: 16px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
