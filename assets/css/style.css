@@ -69,6 +69,11 @@
     .free-play-info strong { font-size: 14px; }
     .free-record-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 420px; pointer-events: auto; }
     .free-record-controls output { flex-basis: 100%; font-size: 11px; }
+    .free-metronome { display: flex; align-items: center; justify-content: center; gap: 8px; flex-basis: 100%; }
+    .free-metronome label { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .free-metronome input { width: 70px; padding: 7px; border: 1px solid #b7916a; border-radius: 8px; background: #fff8eb; color: #573b29; font: 16px var(--sans); }
+    .recording-countdown { position: absolute; z-index: 6; top: 18%; left: 50%; transform: translateX(-50%); color: #ffe1a8; font: 700 clamp(52px, 16vh, 100px)/1 var(--sans); text-shadow: 0 3px 18px #35271d; pointer-events: none; }
+    .app.is-counting .free-play-info > strong, .app.is-counting .free-play-info > span { visibility: hidden; }
     .free-play-info > span { font: 500 clamp(28px, 10vh, 64px) var(--mono); }
     .free-play-info p { margin: 0; font-size: 11px; line-height: 1.7; }
     .app.is-free-play .key .key-note { font-size: clamp(8px, 1.2vw, 12px); }
