@@ -51,11 +51,12 @@
       };
       const builtInChartDefaults = { ...charts };
       const builtInSongNames = {
-        twinkle: "きらきら星 — やさしい",
-        maryHadALittleLamb: "メリーさんの羊 — やさしい"
+        twinkle: "きらきら星",
+        maryHadALittleLamb: "メリーさんの羊"
       };
       const makerStorageKey = "otoiro-maker-songs-v1";
       const songSelect = document.getElementById("songSelect");
+      let songLibrary = null;
       const practiceStartControl = document.getElementById("practiceStartControl");
       const practiceStartBeatInput = document.getElementById("practiceStartBeat");
       const creatorNameInput = document.getElementById("creatorSongName");
@@ -109,7 +110,7 @@
         practiceTempo: document.getElementById("practiceTempoValue")
       };
       const practiceTempoSetting = document.querySelector(".practice-tempo-setting");
-      const selectionControls = [...document.querySelectorAll(".selection-controls input, .selection-controls select, #practiceStartBeat, .game-settings input, .game-settings select, .creator-mode input, .creator-mode select, .creator-mode textarea, .creator-mode button")];
+      const selectionControls = [...document.querySelectorAll(".selection-controls input, .selection-controls select, .song-library input, .song-library select, #practiceStartBeat, .game-settings input, .game-settings select, .creator-mode input, .creator-mode select, .creator-mode textarea, .creator-mode button")];
       const settingsStorageKey = "otoiro-settings-v1";
       const keyColorPresetHints = {
         none: "色マークを付けません。見本は左端D6から右端E6の並びです。",
@@ -1042,14 +1043,15 @@
         }
         exportMobileAppButton.disabled = true;
         try {
-          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse] = await Promise.all([
+          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse, songLibraryResponse] = await Promise.all([
             fetch("./assets/css/style.css", { cache: "no-store" }),
             fetch("./assets/js/game.js", { cache: "no-store" }),
             fetch("./assets/js/sharing.js", { cache: "no-store" }),
-            fetch("./assets/js/result-share.js", { cache: "no-store" })
+            fetch("./assets/js/result-share.js", { cache: "no-store" }),
+            fetch("./assets/js/song-library.js", { cache: "no-store" })
           ]);
-          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
-          const [styleText, scriptText, sharingText, resultShareText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text()]);
+          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok || !songLibraryResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText, sharingText, resultShareText, songLibraryText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text(), songLibraryResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
             id: id.startsWith("community-") ? `user-${id}` : id,
             name,
@@ -1072,9 +1074,10 @@
           const portableScript = document.createElement("script");
           portableDocument.querySelector('script[src="assets/js/sharing.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/result-share.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/song-library.js"]')?.remove();
           portableDocument.querySelector("#resultPanel").hidden = true;
           const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${songLibraryText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
           oldScript.replaceWith(portableScript);
           const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -1143,6 +1146,7 @@
         songSelect.value = songNames[selectedId] ? selectedId : "twinkle";
         chart = charts[songSelect.value];
         updateReadyBpm();
+        songLibrary?.refresh();
       }
 
       function restoreMakerSongs() {
@@ -1234,6 +1238,10 @@
         showCreatorStatus("このブラウザーから曲を削除しました。");
       }
 
+      songLibrary = window.OtoiroSongLibrary?.mount({
+        select: songSelect,
+        getSongs: () => Object.entries(songNames).map(([id, name]) => ({ id, name: name.replace(/ — やさしい$/, ""), chart: charts[id] }))
+      });
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
       const initialProjectRestore = restoreProjectSongs();
