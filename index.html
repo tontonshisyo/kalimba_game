@@ -100,6 +100,7 @@
         </section>
         <div class="game-card" id="gameCard">
           <div class="playfield" id="playfield">
+            <p class="tutorial-guide" id="tutorialGuide" role="status" hidden></p>
             <canvas id="gameCanvas" aria-label="ノーツが流れるゲーム画面"></canvas>
             <div class="field-top">
               <div class="status-pill"><strong id="bpmValue">BPM 96</strong></div>
@@ -133,6 +134,7 @@
                 <div class="overlay-actions">
                   <button class="primary-button" id="startButton">曲を演奏</button>
                   <button class="stop-button" id="freePlayButton" type="button">フリー演奏</button>
+                  <button class="stop-button" id="tutorialButton" type="button">チュートリアル</button>
                   <button class="stop-button" id="stopButton" type="button" hidden>演奏をやめる</button>
                 </div>
               </div>
@@ -337,6 +339,19 @@
     </div>
   </dialog>
   <script src="assets/js/sharing.js" defer></script>
+  <dialog id="tutorialDialog" class="orientation-dialog" aria-labelledby="tutorialTitle" aria-describedby="tutorialCopy">
+    <h2 id="tutorialTitle">チュートリアル</h2>
+    <p id="tutorialCopy">光る鍵盤を押して、8個の音符を演奏してみましょう。入力するまで音符が待つので、自分のペースで進められます。</p>
+    <ol class="tutorial-lessons">
+      <li>音符が下のラインに来たら、同じ音の鍵盤を押します。</li>
+      <li>和音は光る鍵盤をすべて押します。順番は自由です。</li>
+      <li>余計な音は500点減点され、コンボが途切れます。</li>
+    </ol>
+    <div class="orientation-actions">
+      <button id="beginTutorialButton" class="primary-button" type="button">チュートリアルを始める</button>
+      <button id="closeTutorialButton" class="creator-button" type="button">曲選択へ</button>
+    </div>
+  </dialog>
   <script src="assets/js/result-share.js" defer></script>
   <script src="assets/js/song-library.js" defer></script>
   <script src="assets/js/game.js" defer></script>
