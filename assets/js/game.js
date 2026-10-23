@@ -1991,7 +1991,7 @@
           document.getElementById("tutorialGuide").textContent = !next
             ? "演奏できました！ チュートリアルはまもなく終了します。"
             : next.step < 12 ? "1 / 3　音符がラインに来たら、光る鍵盤を押しましょう。"
-            : next.step < 24 ? "2 / 3　和音です。光る2つの鍵盤を、好きな順番で押しましょう。"
+            : next.step < 24 ? "2 / 3　和音は基本、低い音から順番に。左右の手で弾ける音は同時でも大丈夫です。"
             : "3 / 3　光る鍵盤だけを押しましょう。余計な音は減点になります。";
         }
         const lanes = new Set(getNextChord().map((note) => note.lane));
