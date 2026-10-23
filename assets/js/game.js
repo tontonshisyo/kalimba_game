@@ -216,7 +216,7 @@
       let perfectCount = 0;
       let goodCount = 0;
       let missCount = 0;
-      let toastTimer = 0;
+      let toastAnimation = null;
       let hitLine = 0;
 
       function parseCreatorEvents(source, allowInvalid = false) {
@@ -2099,10 +2099,24 @@
       }
 
       function showToast(message, kind) {
+        toastAnimation?.cancel();
         toast.textContent = message;
         toast.className = `toast show ${kind}`;
-        window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(() => toast.classList.remove("show"), 420);
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        toastAnimation = toast.animate(reducedMotion ? [
+          { opacity: 1, offset: 0 },
+          { opacity: 1, offset: .5 },
+          { opacity: 0, offset: 1 }
+        ] : [
+          { opacity: 0, transform: "translate(-50%, -35%) scale(.82)", offset: 0 },
+          { opacity: 1, transform: "translate(-50%, -65%) scale(1.08)", offset: .18 },
+          { opacity: 1, transform: "translate(-50%, -85%) scale(1)", offset: .45 },
+          { opacity: 0, transform: "translate(-50%, -155%) scale(.97)", offset: 1 }
+        ], { duration: reducedMotion ? 400 : 620, easing: "ease-out" });
+        toastAnimation.onfinish = () => {
+          toast.classList.remove("show");
+          toastAnimation = null;
+        };
       }
 
       function getStartBeat(input, selectedChart) {
