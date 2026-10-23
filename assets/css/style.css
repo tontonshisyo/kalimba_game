@@ -638,6 +638,10 @@
     .result-image-preview { margin-top: 12px; color: var(--muted); font-size: 12px; }
     .result-image-preview summary { cursor: pointer; }
     .result-image-preview img { display: block; width: min(100%, 360px); height: auto; margin-top: 12px; border-radius: 12px; }
+    .result-comment { margin-top: 20px; }
+    .result-comment label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .result-comment label small { color: var(--muted); font-weight: 400; margin-left: 8px; }
+    .result-comment textarea { display: block; width: 100%; min-height: 120px; resize: vertical; padding: 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fffdf7; color: var(--text); font: 16px/1.6 var(--sans); }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
