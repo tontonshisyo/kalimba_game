@@ -7,7 +7,7 @@ const output = join(root, "dist");
 const files = [
   "index.html", "manage-7a3d9c2e.html", "manifest.webmanifest", "service-worker.js",
   "assets/css/style.css", "assets/css/public.css",
-  "assets/js/game.js", "assets/js/sharing.js", "assets/js/result-share.js", "assets/js/feedback.js", "assets/js/admin.js",
+  "assets/js/game.js", "assets/js/sharing.js", "assets/js/result-share.js", "assets/js/song-library.js", "assets/js/feedback.js", "assets/js/admin.js",
   "assets/data/custom-charts.json", "assets/data/community-config.json",
   "assets/icons/kalimba.svg", "assets/icons/wood-music.svg"
 ];
