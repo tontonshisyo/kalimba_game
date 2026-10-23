@@ -25,6 +25,13 @@
         <div><dt>最高コンボ</dt><dd id="resultCombo">0</dd></div>
         <div><dt>タイミング</dt><dd id="resultAccuracy">—%</dd></div>
       </dl>
+      <div class="creator-actions result-share-actions">
+        <button class="creator-button creator-button-primary" id="shareResultImageButton" type="button" disabled>画像を共有</button>
+        <button class="creator-button" id="saveResultImageButton" type="button" disabled>画像を保存</button>
+        <button class="creator-button" id="retryResultImageButton" type="button" hidden>画像を再作成</button>
+      </div>
+      <p id="resultImageStatus" class="chart-help" role="status" aria-live="polite"></p>
+      <details class="result-image-preview"><summary>共有画像を確認</summary><img id="resultImagePreview" alt="曲名・スコア・判定数をまとめた共有用の演奏結果" hidden></details>
     </section>
     <header>
       <div class="brand">
@@ -298,6 +305,7 @@
     </main>
   </div>
   <script src="assets/js/sharing.js" defer></script>
+  <script src="assets/js/result-share.js" defer></script>
   <script src="assets/js/game.js" defer></script>
   <script src="assets/js/feedback.js" defer></script>
 </body>
