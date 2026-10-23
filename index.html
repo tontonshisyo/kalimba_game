@@ -67,9 +67,9 @@
               <span>練習モード</span>
               <small>入力するまで曲が停止</small>
             </label>
-            <select class="song-select" id="songSelect" aria-label="練習曲">
-              <option value="twinkle">きらきら星 — やさしい</option>
-              <option value="maryHadALittleLamb">メリーさんの羊 — やさしい</option>
+            <select class="song-select" id="songSelect" aria-label="練習曲" hidden>
+              <option value="twinkle">きらきら星</option>
+              <option value="maryHadALittleLamb">メリーさんの羊</option>
             </select>
           </div>
         </div>
@@ -81,6 +81,17 @@
           <span>練習モードでこの拍から始めます</span>
         </div>
 
+        <section class="song-library" aria-labelledby="songLibraryTitle">
+          <div class="song-library-heading"><div><span class="eyebrow">MUSIC LIBRARY</span><h2 id="songLibraryTitle">曲を選ぶ</h2></div><span class="song-library-symbol" aria-hidden="true">♫</span></div>
+          <div class="song-library-tools">
+            <label class="song-search"><span class="sr-only">曲名で検索</span><input id="songSearch" type="search" placeholder="曲名で検索" autocomplete="off"></label>
+            <label><span class="sr-only">難易度で絞り込む</span><select id="difficultyFilter"><option value="all">すべての難易度</option><option value="0">かんたん</option><option value="1">ふつう</option><option value="2">むずかしい</option><option value="3">めちゃむず</option></select></label>
+          </div>
+          <div id="songCards" class="song-cards" role="group" aria-label="演奏する曲を選択"></div>
+          <p id="songLibraryEmpty" class="chart-help" role="status" hidden>条件に合う曲がありません。</p>
+          <div class="song-library-selection"><p id="songSelectionSummary" role="status"></p><button class="creator-button creator-button-primary" id="playSelectedSongButton" type="button">選択した曲を演奏</button></div>
+          <details class="song-difficulty-help"><summary>難易度の目安</summary><p>元のテンポでの平均音符数と、最も音符が多い4秒間から自動判定します。和音は構成音を1音ずつ数えます。練習中の速度変更では難易度は変わりません。</p></details>
+        </section>
         <section class="shared-song-panel" id="sharedSongPanel" aria-label="共有された曲" hidden>
           <h2 id="sharedSongTitle">共有された曲</h2>
           <p id="sharedSongStatus" role="status"></p>
@@ -317,6 +328,7 @@
   </div>
   <script src="assets/js/sharing.js" defer></script>
   <script src="assets/js/result-share.js" defer></script>
+  <script src="assets/js/song-library.js" defer></script>
   <script src="assets/js/game.js" defer></script>
   <script src="assets/js/feedback.js" defer></script>
 </body>
