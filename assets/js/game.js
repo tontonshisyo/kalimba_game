@@ -110,7 +110,7 @@
         practiceTempo: document.getElementById("practiceTempoValue")
       };
       const practiceTempoSetting = document.querySelector(".practice-tempo-setting");
-      const selectionControls = [...document.querySelectorAll(".selection-controls input, .selection-controls select, .song-library input, .song-library select, #practiceStartBeat, .game-settings input, .game-settings select, .creator-mode input, .creator-mode select, .creator-mode textarea, .creator-mode button")];
+      const selectionControls = [...document.querySelectorAll(".selection-controls input, .selection-controls select, .song-library input, .song-library select, #tutorialButton, #practiceStartBeat, .game-settings input, .game-settings select, .creator-mode input, .creator-mode select, .creator-mode textarea, .creator-mode button")];
       const settingsStorageKey = "otoiro-settings-v1";
       const keyColorPresetHints = {
         none: "色マークを付けません。見本は左端D6から右端E6の並びです。",
@@ -200,6 +200,7 @@
       let effects = [];
       let state = "ready";
       let isTestPlay = false;
+      let isTutorial = false;
       let previewTimers = [];
       let isRecording = false;
       let recordingStartedAt = Number.POSITIVE_INFINITY;
@@ -1985,6 +1986,14 @@
       }
 
       function setNextNote() {
+        if (isTutorial) {
+          const next = activeNotes.find(note => !note.hit && !note.missed);
+          document.getElementById("tutorialGuide").textContent = !next
+            ? "演奏できました！ チュートリアルはまもなく終了します。"
+            : next.step < 12 ? "1 / 3　音符がラインに来たら、光る鍵盤を押しましょう。"
+            : next.step < 24 ? "2 / 3　和音です。光る2つの鍵盤を、好きな順番で押しましょう。"
+            : "3 / 3　光る鍵盤だけを押しましょう。余計な音は減点になります。";
+        }
         const lanes = new Set(getNextChord().map((note) => note.lane));
         keyButtons.forEach((button, index) => button.classList.toggle("next", lanes.has(index)));
       }
@@ -2110,6 +2119,21 @@
         document.getElementById("exitFreePlayButton").focus();
       }
 
+      const tutorialDialog = document.getElementById("tutorialDialog");
+      document.getElementById("tutorialButton").addEventListener("click", () => {
+        if (state !== "ready" && state !== "finished") return;
+        document.getElementById("tutorialTitle").textContent = "チュートリアル";
+        document.getElementById("tutorialCopy").textContent = "光る鍵盤を押して、8個の音符を演奏してみましょう。入力するまで音符が待つので、自分のペースで進められます。";
+        document.getElementById("beginTutorialButton").textContent = "チュートリアルを始める";
+        tutorialDialog.showModal();
+      });
+      document.getElementById("closeTutorialButton").addEventListener("click", () => tutorialDialog.close());
+      document.getElementById("beginTutorialButton").addEventListener("click", () => {
+        tutorialDialog.close();
+        const begin = () => { isTutorial = true; startGame(true); };
+        if (!requestOrientation(begin)) begin();
+      });
+
       function startGame(orientationAccepted = false) {
         if (state === "free" || isRecording) return;
         if (state === "playing") return;
@@ -2122,17 +2146,18 @@
           state = "playing";
           app.classList.add("is-playing");
           resizeCanvas();
-          document.getElementById("gameStatus").textContent = isTestPlay ? "おためし演奏" : practiceMode ? "練習モード" : "演奏中";
+          document.getElementById("gameStatus").textContent = isTutorial ? "チュートリアル" : isTestPlay ? "おためし演奏" : practiceMode ? "練習モード" : "演奏中";
           overlay.classList.add("hidden");
           return;
         }
         if (audioContext && audioContext.state === "suspended") audioContext.resume();
         chart = charts[document.getElementById("songSelect").value];
-        practiceMode = practiceModeInput.checked;
-        const startBeat = practiceMode ? getStartBeat(practiceStartBeatInput, chart) : 0;
+        if (isTutorial) chart = parseCreatorChart("チュートリアル", 80, "0,C4\n2,D4\n4,E4\n6,F4\n6,G4\n9,C4\n9,E4\n12,C4");
+        practiceMode = isTutorial || practiceModeInput.checked;
+        const startBeat = isTutorial ? 0 : practiceMode ? getStartBeat(practiceStartBeatInput, chart) : 0;
         if (startBeat === null) return;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
-        runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
+        runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
         activeNotes = createActiveNotes(chart, startBeat);
         practiceHoldAt = null;
         practiceNote = null;
@@ -2148,7 +2173,8 @@
         app.classList.add("is-playing");
         updateKeyLabels();
         resizeCanvas();
-        document.getElementById("gameStatus").textContent = practiceMode ? "練習モード" : "演奏中";
+        document.getElementById("gameStatus").textContent = isTutorial ? "チュートリアル" : practiceMode ? "練習モード" : "演奏中";
+        document.getElementById("tutorialGuide").hidden = !isTutorial;
         document.getElementById("overlayTitle").textContent = "演奏モードを選択";
         document.getElementById("overlayCopy").innerHTML = "曲を選んで「曲を演奏」を押してください。<br>譜面なしで弾く場合は「フリー演奏」。";
         document.getElementById("startButton").textContent = "曲を演奏";
@@ -2244,6 +2270,13 @@
 
       function stopGame() {
         if (state !== "paused" && state !== "free") return;
+        if (isTutorial) {
+          isTutorial = false;
+          chart = charts[songSelect.value];
+          practiceMode = practiceModeInput.checked;
+          document.getElementById("tutorialGuide").hidden = true;
+          updateReadyBpm();
+        }
         if (state === "free") stopFreeTransport();
         if (isTestPlay) {
           returnFromTestPlay("テストプレイを終了しました。譜面は保存されていません。");
@@ -2273,6 +2306,15 @@
 
       function finishGame() {
         document.getElementById("freePlayButton").hidden = false;
+        if (isTutorial) {
+          state = "paused";
+          stopGame();
+          document.getElementById("tutorialTitle").textContent = "チュートリアル完了！";
+          document.getElementById("tutorialCopy").textContent = "8個の音符を演奏できました。通常プレイでは音符が待たずに流れます。自分のペースで弾きたいときは、練習モードを選んでください。";
+          document.getElementById("beginTutorialButton").textContent = "もう一度練習する";
+          tutorialDialog.showModal();
+          return;
+        }
         if (isTestPlay) {
           returnFromTestPlay("テストプレイが最後まで終わりました。譜面は保存されていません。");
           return;
