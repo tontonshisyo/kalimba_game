@@ -2017,8 +2017,51 @@
           })).sort((a, b) => a.time - b.time || notes[a.lane].semitones - notes[b.lane].semitones);
       }
 
-      function startFreePlay() {
+      const portraitQuery = window.matchMedia("(orientation: portrait)");
+      const orientationDialog = document.getElementById("orientationDialog");
+      const orientationContinue = document.getElementById("orientationContinue");
+      let pendingOrientationAction = null;
+      function isTouchPortrait() {
+        return portraitQuery.matches && (navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches);
+      }
+      function updateOrientationPrompt() {
+        const portrait = isTouchPortrait();
+        document.getElementById("orientationTitle").textContent = portrait ? "横向きでの演奏がおすすめです" : "演奏を始められます";
+        document.getElementById("orientationCopy").textContent = portrait
+          ? "17個の鍵盤を押しやすくするため、スマホを横向きにしてください。縦向きのままでも演奏できます。"
+          : "横向きになりました。ボタンを押して演奏を続けてください。";
+        orientationContinue.textContent = portrait ? "このまま続ける" : "演奏を開始・再開";
+      }
+      function requestOrientation(action) {
+        if (!isTouchPortrait()) return false;
+        pendingOrientationAction = action;
+        updateOrientationPrompt();
+        if (!orientationDialog.open) orientationDialog.showModal();
+        return true;
+      }
+      orientationContinue.addEventListener("click", () => {
+        const action = pendingOrientationAction;
+        pendingOrientationAction = null;
+        orientationDialog.close();
+        action?.();
+      });
+      document.getElementById("orientationCancel").addEventListener("click", () => {
+        pendingOrientationAction = null;
+        orientationDialog.close();
+      });
+      orientationDialog.addEventListener("cancel", () => { pendingOrientationAction = null; });
+      const handleOrientationChange = () => {
+        if (isTouchPortrait() && state === "playing") {
+          pauseGame();
+          requestOrientation(() => startGame(true));
+        }
+        if (orientationDialog.open) updateOrientationPrompt();
+      };
+      portraitQuery.addEventListener("change", handleOrientationChange);
+
+      function startFreePlay(orientationAccepted = false) {
         if (isRecording || (state !== "ready" && state !== "finished")) return;
+        if (orientationAccepted !== true && requestOrientation(() => startFreePlay(true))) return;
         document.getElementById("resultPanel").hidden = true;
         stopPreview();
         cancelSheetGesture();
@@ -2045,8 +2088,10 @@
         document.getElementById("exitFreePlayButton").focus();
       }
 
-      function startGame() {
+      function startGame(orientationAccepted = false) {
         if (state === "free" || isRecording) return;
+        if (state === "playing") return;
+        if (orientationAccepted !== true && requestOrientation(() => startGame(true))) return;
         if (state === "paused") {
           const now = performance.now();
           const pauseDuration = now - pausedAt;
@@ -2089,8 +2134,9 @@
         setNextNote();
       }
 
-      function startTestPlay() {
+      function startTestPlay(orientationAccepted = false) {
         if (state !== "ready" && state !== "finished") return;
+        if (orientationAccepted !== true && requestOrientation(() => startTestPlay(true))) return;
         let testChart;
         try {
           testChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
