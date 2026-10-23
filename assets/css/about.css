@@ -43,3 +43,11 @@
   .about-back { padding: 10px 12px; gap: 8px; }
 }
 
+
+.about-updates { list-style: none; margin: 0; padding: 0; }
+.about-updates li { padding: 14px 0; border-bottom: 1px solid #ead9c3; }
+.about-updates li:first-child { padding-top: 0; }
+.about-updates li:last-child { padding-bottom: 0; border-bottom: 0; }
+.about-updates time { color: #796957; font-size: 12px; }
+.about-updates h3 { margin: 4px 0; font-size: 15px; }
+.about-updates p { margin: 0; }
