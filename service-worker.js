@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "otoiro-shell-v92";
+const CACHE_NAME = "otoiro-shell-v93";
 // Deploy the compact-link sharing UI and receiver together.
 const APP_FILES = [
   "./",
@@ -48,6 +48,11 @@ self.addEventListener("fetch", (event) => {
     }).catch(async (error) => {
       const cached = await caches.match(event.request);
       if (cached) return cached;
+      // Cloudflare redirects about.html to /about; serve the same cached page offline.
+      if (event.request.mode === "navigate" && new URL(event.request.url).pathname === new URL("./about", self.location.href).pathname) {
+        const about = await caches.match("./about.html");
+        if (about) return about;
+      }
       if (event.request.mode === "navigate") return caches.match("./index.html");
       throw error;
     })
