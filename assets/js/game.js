@@ -2457,6 +2457,15 @@
       });
       initialProjectRestore.catch(() => {}).then(loadSharedSong);
       window.addEventListener("hashchange", loadSharedSong);
+      function openFeedbackFromLink() {
+        if (location.hash !== "#feedback") return;
+        const feedback = document.getElementById("feedback");
+        if (!feedback) return;
+        feedback.open = true;
+        feedback.scrollIntoView({ block: "start" });
+      }
+      openFeedbackFromLink();
+      window.addEventListener("hashchange", openFeedbackFromLink);
 
       document.getElementById("importShareButton").addEventListener("click", () => document.getElementById("importShareFile").click());
       document.getElementById("importShareFile").addEventListener("change", async (event) => {
