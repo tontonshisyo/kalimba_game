@@ -637,17 +637,21 @@
             const hand = hands.left.length <= hands.right.length ? hands.left : hands.right;
             hand.push(lane);
           }
+          const laneHands = new Map();
           for (const [handSide, hand] of Object.entries(hands)) {
             hand.sort((a, b) => notes[a].semitones - notes[b].semitones);
-            const interval = hand.length > 1
-              ? Math.min(arpeggioNoteInterval, maxArpeggioDuration / (hand.length - 1))
-              : 0;
-            const spread = interval * Math.max(0, hand.length - 1);
-            leadIn = Math.max(leadIn, spread);
-            hand.forEach((lane, index) => {
-              events.push({ step, lane, offset: (index - hand.length + 1) * interval, handSide, handIndex: index });
-            });
+            hand.forEach((lane, handIndex) => laneHands.set(lane, { handSide, handIndex }));
           }
+          const orderedLanes = lanes.slice().sort((a, b) => notes[a].semitones - notes[b].semitones);
+          const interval = orderedLanes.length > 1
+            ? Math.min(arpeggioNoteInterval, maxArpeggioDuration / (orderedLanes.length - 1))
+            : 0;
+          const spread = interval * Math.max(0, orderedLanes.length - 1);
+          leadIn = Math.max(leadIn, spread);
+          orderedLanes.forEach((lane, index) => {
+            const { handSide, handIndex } = laneHands.get(lane);
+            events.push({ step, lane, offset: (index - orderedLanes.length + 1) * interval, handSide, handIndex });
+          });
         }
         events.sort((a, b) => a.step - b.step || a.offset - b.offset);
         return { events, leadIn };
