@@ -421,7 +421,7 @@
       .app.is-playing .layout { grid-template-columns: minmax(0, 1fr); }
       .app.is-playing .game-card { padding: 4px; }
       .app.is-playing .key-row { right: 16px; bottom: 8px; left: 16px; gap: 5px; padding: 5px 6px 4px; }
-      .app.is-playing .key { height: calc(clamp(44px, 12vh, 72px) - var(--key-shortening, 0px)); min-height: 36px; }
+      .app.is-playing .key { height: calc(clamp(44px, 12vh, 72px) + 8px - var(--key-shortening, 0px)); min-height: 44px; }
       .side-column { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding-top: 0; }
       .panel { padding: 8px 11px; border-radius: 10px; }
       .panel-heading { margin-bottom: 5px; }
