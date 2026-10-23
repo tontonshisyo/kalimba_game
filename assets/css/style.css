@@ -633,6 +633,11 @@
     .shared-song-panel h2 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
     .shared-song-panel p { font-size: 13px; line-height: 1.7; }
     .shared-song-panel[hidden], .shared-song-panel [hidden], .app.is-playing .shared-song-panel { display: none; }
+    .result-share-actions { margin-top: 20px; }
+    .result-share-actions [hidden], .result-image-preview img[hidden] { display: none; }
+    .result-image-preview { margin-top: 12px; color: var(--muted); font-size: 12px; }
+    .result-image-preview summary { cursor: pointer; }
+    .result-image-preview img { display: block; width: min(100%, 360px); height: auto; margin-top: 12px; border-radius: 12px; }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
