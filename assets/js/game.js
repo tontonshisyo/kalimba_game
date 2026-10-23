@@ -208,6 +208,7 @@
       let recordingTickTimer = 0;
       let startedAt = 0;
       let pausedAt = 0;
+      let preparedShareFile = null;
       let score = 0;
       let combo = 0;
       let bestCombo = 0;
@@ -277,6 +278,7 @@
       }
 
       function renderSheetPreview() {
+        invalidateShareFile();
         const svgNamespace = "http://www.w3.org/2000/svg";
         const createSvgElement = (tag, attributes = {}, text = "") => {
           const element = document.createElementNS(svgNamespace, tag);
@@ -869,7 +871,7 @@
         const fileHandle = await getProjectChartsFile(directoryHandle);
         const file = await fileHandle.getFile();
         if (file.size > 2 * 1024 * 1024) throw new Error("プロジェクトの譜面ファイルが2MBを超えています。");
-        const pack = JSON.parse(await file.text());
+        const pack = await window.OtoiroSharing.decode(file);
         return {
           songs: validateChartPack(pack, true),
           authoritative: typeof pack.updatedAt === "string"
@@ -983,15 +985,6 @@
       }
 
       async function restoreProjectSongs() {
-        try {
-          const savedDirectory = await getSavedProjectDirectory();
-          if (savedDirectory && await savedDirectory.queryPermission({ mode: "readwrite" }) === "granted") {
-            projectDirectoryHandle = savedDirectory;
-          }
-        } catch (error) {
-          console.warn("連携済みのプロジェクトフォルダーを確認できませんでした。", error);
-        }
-
         let restoredSongs = null;
         let authoritative = false;
         try {
@@ -1013,7 +1006,7 @@
           }
         }
         if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
-        const mergedSongs = mergeMakerSongs(restoredSongs, authoritative);
+        const mergedSongs = [...new Map([...restoredSongs, ...makerSongs].map((song) => [song.id, song])).values()];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
       }
@@ -1049,12 +1042,13 @@
         }
         exportMobileAppButton.disabled = true;
         try {
-          const [styleResponse, scriptResponse] = await Promise.all([
+          const [styleResponse, scriptResponse, sharingResponse] = await Promise.all([
             fetch("./assets/css/style.css", { cache: "no-store" }),
-            fetch("./assets/js/game.js", { cache: "no-store" })
+            fetch("./assets/js/game.js", { cache: "no-store" }),
+            fetch("./assets/js/sharing.js", { cache: "no-store" })
           ]);
-          if (!styleResponse.ok || !scriptResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
-          const [styleText, scriptText] = await Promise.all([styleResponse.text(), scriptResponse.text()]);
+          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText, sharingText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
             id: id.startsWith("community-") ? `user-${id}` : id,
             name,
@@ -1075,8 +1069,9 @@
           portableDocument.querySelector("head").append(portableStyle);
           const oldScript = portableDocument.querySelector('script[src="assets/js/game.js"]');
           const portableScript = document.createElement("script");
+          portableDocument.querySelector('script[src="assets/js/sharing.js"]')?.remove();
           const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
           oldScript.replaceWith(portableScript);
           const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -1095,16 +1090,17 @@
       }
 
       async function importCreatorSongs(file) {
+        showCreatorStatus("譜面ファイルを読み込んでいます…");
         if (file.size > 2 * 1024 * 1024) {
           showCreatorStatus("ファイルサイズが大きすぎます（上限2MB）。", true);
           return;
         }
         let pack;
         try {
-          pack = JSON.parse(await file.text());
+          pack = await window.OtoiroSharing.decode(file);
         } catch (error) {
           console.error("譜面ファイルを読み取れませんでした。", error);
-          showCreatorStatus("JSONファイルを読み取れません。ファイル形式を確認してください。", true);
+          showCreatorStatus(error.message || "譜面ファイルを読み取れません。", true);
           return;
         }
         let imported;
@@ -1127,8 +1123,10 @@
         const mergedSongs = [...makerSongs.filter((song) => !importedIds.has(song.id)), ...imported];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
-        syncProjectSongs(mergedSongs);
-        showCreatorStatus(`${imported.length}曲を読み込みました。${conflicts ? ` ${conflicts}曲を上書きしました。` : ""} 編集中の内容は保持されています。`);
+
+        refreshSongOptions(imported[0].id);
+        loadSelectedSongIntoEditor();
+        showCreatorStatus(`${imported.length}曲をこのブラウザーに保存しました。曲を選んで演奏できます。`);
       }
 
       function refreshSongOptions(selectedId = songSelect.value) {
@@ -1197,7 +1195,7 @@
 
       async function saveCreatorSong(isNew) {
         const selectedId = songSelect.value;
-        const id = isNew || selectedId.startsWith("community-")
+        const id = isNew || !selectedId.startsWith("user-")
           ? `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
           : selectedId;
         let validated;
@@ -1216,14 +1214,7 @@
         songNames[id] = validated.name;
         refreshSongOptions(id);
         loadSelectedSongIntoEditor();
-        const synced = projectDirectoryHandle
-          ? await syncProjectSongs(updatedSongs)
-          : await connectProjectFolder();
-        if (synced) {
-          showCreatorStatus(`「${validated.name}」をプロジェクトに保存しました。スマートフォンでページを再読み込みするとプレイできます。`);
-        } else if (!projectDirectoryHandle) {
-          showCreatorStatus(`「${validated.name}」はこのブラウザーに保存しました。スマートフォンでもプレイするにはプロジェクトフォルダーとの連携が必要です。`, true);
-        }
+        showCreatorStatus(`「${validated.name}」をこのブラウザーに保存しました。ほかの端末へは共有ファイルで渡せます。`);
       }
 
       async function removeSelectedCreatorSong() {
@@ -1237,126 +1228,12 @@
         delete songNames[id];
         refreshSongOptions("twinkle");
         loadSelectedSongIntoEditor();
-        const synced = projectDirectoryHandle
-          ? await syncProjectSongs(updatedSongs)
-          : await connectProjectFolder();
-        if (synced) showCreatorStatus("自作曲を削除し、プロジェクトファイルにも反映しました。");
-        else if (!projectDirectoryHandle) showCreatorStatus("自作曲はこのブラウザーから削除しました。プロジェクトファイルへの反映には連携が必要です。", true);
+        showCreatorStatus("このブラウザーから曲を削除しました。");
       }
 
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
       restoreProjectSongs();
-      initCommunitySongs();
-
-      let communityConfig;
-      let communityOffset = 0;
-      let communityBusy = false;
-      let communityPosting = false;
-
-      async function communityRequest(path, options = {}) {
-        const response = await fetch(`${communityConfig.url}/rest/v1/${path}`, {
-          ...options,
-          headers: { apikey: communityConfig.publishableKey, "Content-Type": "application/json", ...options.headers },
-          signal: AbortSignal.timeout(15000),
-          cache: "no-store"
-        });
-        if (!response.ok) throw new Error("通信できませんでした。しばらくしてから再度お試しください。");
-        return response;
-      }
-
-      async function initCommunitySongs() {
-        const status = document.getElementById("communityStatus");
-        try {
-          const response = await fetch("./assets/data/community-config.json", { cache: "no-store" });
-          if (!response.ok) return;
-          const config = await response.json();
-          if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(config.url) || !/^sb_publishable_/.test(config.publishableKey)) return;
-          communityConfig = { url: config.url.replace(/\/$/, ""), publishableKey: config.publishableKey };
-          app.classList.add("community-enabled");
-          document.getElementById("publishSongButton").disabled = false;
-          await loadCommunitySongs(true);
-        } catch (error) {
-          status.textContent = "曲を取得できませんでした。「曲を更新」で再試行してください。";
-        }
-      }
-
-      async function loadCommunitySongs(reset = false) {
-        if (communityBusy || !["ready", "finished"].includes(state)) return;
-        if (!communityConfig) { await initCommunitySongs(); return; }
-        communityBusy = true;
-        const status = document.getElementById("communityStatus");
-        status.textContent = "曲を読み込んでいます…";
-        try {
-          const offset = reset ? 0 : communityOffset;
-          const response = await communityRequest(`community_songs?select=id,title,bpm,key_signature,notes&order=created_at.desc,id.desc&limit=25&offset=${offset}`);
-          const rows = await response.json();
-          if (!Array.isArray(rows)) throw new Error("曲データを読み込めませんでした。");
-          if (!["ready", "finished"].includes(state)) { status.textContent = "演奏終了後に「曲を読み込む」を押してください。"; return; }
-          const list = document.getElementById("communitySongs");
-          if (reset) {
-            list.replaceChildren();
-            for (const id of Object.keys(songNames)) {
-              if (id.startsWith("community-")) { delete songNames[id]; delete charts[id]; }
-            }
-          }
-          let added = 0;
-          for (const row of rows) {
-            try {
-              if (!/^[0-9a-f-]{36}$/.test(row.id) || !Array.isArray(row.notes) || row.notes.length > 2000) continue;
-              const source = row.notes.map((event) => {
-                if (!Number.isFinite(event.beat) || !Number.isInteger(event.lane) || !notes[event.lane]) throw new Error("Invalid note");
-                return `${event.beat},${notes[event.lane].name}${notes[event.lane].octave}`;
-              }).join("\n");
-              const parsed = parseCreatorChart(row.title, row.bpm, source, row.key_signature);
-              const id = `community-${row.id}`;
-              charts[id] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature };
-              songNames[id] = parsed.name;
-              const button = document.createElement("button");
-              button.type = "button";
-              button.className = "creator-button";
-              button.textContent = `${parsed.name} · BPM ${parsed.bpm} · ${parsed.steps.length}音 — 選んで遊ぶ`;
-              button.addEventListener("click", () => {
-                if (!["ready", "finished"].includes(state)) return;
-                songSelect.value = id;
-                songSelect.dispatchEvent(new Event("change"));
-                document.getElementById("startButton").focus();
-                status.textContent = `「${parsed.name}」を選びました。「曲を演奏」で遊べます。`;
-              });
-              list.append(button);
-              added++;
-            } catch (error) { /* Skip malformed entries without stopping the list. */ }
-          }
-          communityOffset = offset + rows.length;
-          refreshSongOptions();
-          document.getElementById("communityMoreButton").hidden = rows.length < 25;
-          status.textContent = rows.length ? `${added}曲を読み込みました。` : offset ? "すべての曲を読み込みました。" : "まだ投稿がありません。最初の曲を作ってみましょう。";
-        } catch (error) { status.textContent = error.message; }
-        finally { communityBusy = false; }
-      }
-
-      async function publishCommunitySong() {
-        if (!communityConfig || communityPosting || !["ready", "finished"].includes(state)) return;
-        try {
-          const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
-          if (parsed.steps.length > 2000) throw new Error("投稿できる音符は2000個までです。");
-          if (!window.confirm(`「${parsed.name}」をみんなに公開しますか？曲名と譜面が公開されます。`)) return;
-          communityPosting = true;
-          document.getElementById("publishSongButton").disabled = true;
-          showCreatorStatus("曲を投稿しています…");
-          await communityRequest("community_songs", {
-            method: "POST", headers: { Prefer: "return=minimal" },
-            body: JSON.stringify({ title: parsed.name, bpm: parsed.bpm, key_signature: parsed.keySignature, notes: parsed.steps.map(([step, lane]) => ({ beat: step / 2, lane })) })
-          });
-          showCreatorStatus(`「${parsed.name}」を投稿しました。みんなの曲から遊べます。`);
-          await loadCommunitySongs(true);
-        } catch (error) { showCreatorStatus(error.message, true); }
-        finally {
-          communityPosting = false;
-          document.getElementById("publishSongButton").disabled = state === "playing" || state === "free" || state === "paused";
-        }
-      }
-
       function loadSettings() {
         try {
           const stored = JSON.parse(localStorage.getItem(settingsStorageKey) || "{}");
@@ -2347,10 +2224,59 @@
         window.scrollTo({ top: 0, behavior: "instant" });
       }
 
+
+
+      const prepareShareButton = document.getElementById("prepareShareButton");
+      const sendShareButton = document.getElementById("sendShareButton");
+      const downloadShareButton = document.getElementById("downloadShareButton");
+      const shareStatus = document.getElementById("shareStatus");
+      function invalidateShareFile() {
+        if (!preparedShareFile) return;
+        preparedShareFile = null;
+        sendShareButton.hidden = true;
+        downloadShareButton.hidden = true;
+        shareStatus.textContent = "曲が変更されました。共有ファイルを作り直してください。";
+      }
+      prepareShareButton.addEventListener("click", async () => {
+        if (!["ready", "finished"].includes(state)) return;
+        preparedShareFile = null;
+        sendShareButton.hidden = true;
+        downloadShareButton.hidden = true;
+        prepareShareButton.disabled = true;
+        shareStatus.textContent = "共有ファイルを作成しています…";
+        const snapshot = [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n");
+        try {
+          const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value);
+          const song = { id: "user-share-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8), name: parsed.name, bpm: parsed.bpm, keySignature: parsed.keySignature, source: chartToSource(parsed) };
+          const file = await window.OtoiroSharing.encode(createChartPack([song]), parsed.name);
+          if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value].join("\n")) throw new Error("曲が変更されました。共有ファイルを作り直してください。");
+          preparedShareFile = file;
+          downloadShareButton.hidden = false;
+          sendShareButton.hidden = !(navigator.share && navigator.canShare?.({ files: [file] }));
+          shareStatus.textContent = `共有ファイルを作成しました（${Math.max(1, Math.ceil(file.size / 1024))}KB）。保存するか、共有先を選んで送ってください。`;
+        } catch (error) { shareStatus.textContent = error.message; }
+        finally { prepareShareButton.disabled = false; }
+      });
+      sendShareButton.addEventListener("click", async () => {
+        if (!preparedShareFile) return;
+        try { await navigator.share({ files: [preparedShareFile], title: creatorNameInput.value }); }
+        catch (error) { if (error.name !== "AbortError") shareStatus.textContent = "共有できませんでした。「ファイルを保存」から渡してください。"; }
+      });
+      downloadShareButton.addEventListener("click", () => {
+        if (preparedShareFile) window.OtoiroSharing.download(preparedShareFile);
+      });
+      document.getElementById("importShareButton").addEventListener("click", () => document.getElementById("importShareFile").click());
+      document.getElementById("importShareFile").addEventListener("change", async (event) => {
+        const [file] = event.target.files;
+        if (!file) return;
+        try { await importCreatorSongs(file); }
+        catch (error) { showCreatorStatus(error.message || "譜面を読み込めませんでした。", true); }
+        finally { event.target.value = ""; }
+      });
+      creatorDetails.addEventListener("input", invalidateShareFile);
+      creatorDetails.addEventListener("change", invalidateShareFile);
+
       document.getElementById("startButton").addEventListener("click", startGame);
-      document.getElementById("communityRefreshButton").addEventListener("click", () => loadCommunitySongs(true));
-      document.getElementById("communityMoreButton").addEventListener("click", () => loadCommunitySongs(false));
-      document.getElementById("publishSongButton").addEventListener("click", publishCommunitySong);
       document.getElementById("freePlayButton").addEventListener("click", startFreePlay);
       document.getElementById("freeRecordButton").addEventListener("click", () => {
         if (state !== "free") return;
