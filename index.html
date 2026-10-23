@@ -114,6 +114,7 @@
               <button class="stop-recording-button" id="stopRecordingButton" type="button" hidden>録音を止める</button>
             </div>
             <div class="recording-indicator" id="recordingIndicator" hidden></div>
+            <div class="recording-countdown" id="recordingCountdown" role="status" aria-live="polite" hidden></div>
             <div class="free-play-info">
               <strong>フリー演奏</strong>
               <span id="freePlayNote">♪</span>
@@ -121,6 +122,7 @@
                 <button class="creator-button" id="freeRecordButton" type="button">録音を開始</button>
                 <button class="creator-button" id="freeReplayButton" type="button" disabled>録音を再生</button>
                 <button class="creator-button" id="freeVideoButton" type="button" disabled>動画を作成</button>
+                <div class="free-metronome"><label>BPM <input id="freeMetronomeBpm" type="number" min="30" max="240" step="1" value="100" required></label><button class="creator-button" id="freeMetronomeButton" type="button" aria-pressed="false">メトロノーム：OFF</button></div>
                 <button class="creator-button" id="freeReplayStopButton" type="button" hidden>再生を停止</button>
                 <output id="freeRecordStatus" aria-live="polite">録音すると演奏を聴き返せます</output>
               </div>
@@ -298,7 +300,7 @@
             <p class="chart-help portable-export-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
             <section class="recording-panel" aria-label="鍵盤入力で譜面を録音">
               <h3>鍵盤で録音</h3>
-              <p>メトロノームのカウントイン後に鍵盤を弾きます。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
+              <p>横画面で準備し、「録音開始」を押すと4・3・2・1のカウントダウン後に録音します。演奏中はメトロノームを鳴らしません。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
               <label for="quantizeSetting">クオンタイズ
                 <select id="quantizeSetting">
                   <option value="1">4分音符</option>
@@ -307,7 +309,7 @@
                 </select>
               </label>
               <div class="creator-actions">
-                <button class="creator-button creator-button-primary" id="startRecordingButton" type="button">メトロノーム録音を開始</button>
+                <button class="creator-button creator-button-primary" id="startRecordingButton" type="button">録音の準備</button>
               </div>
             </section>
             <p class="creator-status" id="creatorStatus" role="status" aria-live="polite"></p>
@@ -352,6 +354,12 @@
     <p class="chart-help">共有先によって対応形式やコメントの扱いが異なります。必要に応じて動画を保存し、コメントをコピーして投稿してください。</p>
   </dialog>
   <script src="assets/js/sharing.js" defer></script>
+  <dialog id="recordingReadyDialog" class="orientation-dialog" aria-labelledby="recordingReadyTitle" aria-describedby="recordingReadyCopy">
+    <div class="orientation-symbol" aria-hidden="true">↻</div>
+    <h2 id="recordingReadyTitle">横画面で録音の準備</h2>
+    <p id="recordingReadyCopy">横画面にして、準備ができたら「録音開始」を押してください。4・3・2・1の後に録音が始まります。縦画面のままでも録音できます。</p>
+    <div class="orientation-actions"><button id="confirmRecordingButton" class="primary-button" type="button">録音開始</button><button id="cancelRecordingReadyButton" class="creator-button" type="button">やめておく</button></div>
+  </dialog>
   <dialog id="tutorialDialog" class="orientation-dialog" aria-labelledby="tutorialTitle" aria-describedby="tutorialCopy">
     <h2 id="tutorialTitle">チュートリアル</h2>
     <p id="tutorialCopy">光る鍵盤を押して、8個の音符を演奏してみましょう。入力するまで音符が待つので、自分のペースで進められます。</p>
