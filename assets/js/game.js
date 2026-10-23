@@ -1751,6 +1751,7 @@
           ctx.fill();
           ctx.shadowBlur = 0;
 
+          drawSlideConnections(geometry, (renderTime - startedAt) / 1000);
           for (const note of activeNotes) {
             if (!note.spawned || note.hit || note.missed) continue;
             const elapsed = (renderTime - startedAt) / 1000;
@@ -2087,18 +2088,50 @@
         return startBeat;
       }
 
+      function drawSlideConnections(geometry, elapsed) {
+        ctx.save();
+        ctx.lineCap = "round";
+        for (const note of activeNotes) {
+          const next = note.slideNext;
+          if (!next || !note.spawned || !next.spawned || note.missed || next.missed || (note.hit && next.hit)) continue;
+          const depth = value => value.hit ? 1 : Math.min(1, Math.max(0, (elapsed - (value.time - runTravelTime)) / runTravelTime));
+          const fromDepth = depth(note), toDepth = depth(next);
+          const from = geometry.lanePoint(note.lane, fromDepth), to = geometry.lanePoint(next.lane, toDepth);
+          ctx.strokeStyle = "rgba(255, 224, 166, .82)";
+          ctx.lineWidth = 2 + Math.min(fromDepth, toDepth) * 2;
+          ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       function createActiveNotes(selectedChart, startBeat) {
         const startStep = startBeat * 2;
         const selectedSteps = selectedChart.steps.filter(([step]) => step >= startStep);
         const { events } = getArpeggiatedEvents(selectedSteps, selectedChart.directLanes);
-        return events.map(({ step, lane, offset }) => ({
+        const result = events.map(({ step, lane, offset, handSide, handIndex }) => ({
             step,
+            handSide,
+            handIndex,
             time: runTravelTime + ((step - startStep) * (60 / selectedChart.bpm / 2) + offset) * runTempoScale,
             lane,
             spawned: false,
             hit: false,
             missed: false
           })).sort((a, b) => a.time - b.time || notes[a.lane].semitones - notes[b.lane].semitones);
+        const hands = new Map();
+        for (const note of result) {
+          const key = `${note.step}:${note.handSide}`;
+          if (!hands.has(key)) hands.set(key, []);
+          hands.get(key).push(note);
+        }
+        for (const hand of hands.values()) {
+          hand.sort((a, b) => a.handIndex - b.handIndex);
+          for (let i = 1; i < hand.length; i++) {
+            const previous = hand[i - 1], current = hand[i];
+            if (Math.abs(previous.lane - current.lane) === 1) previous.slideNext = current;
+          }
+        }
+        return result;
       }
 
       const portraitQuery = window.matchMedia("(orientation: portrait)");
