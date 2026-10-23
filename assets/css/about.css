@@ -1,0 +1,45 @@
+.about-shell { max-width: 1040px; margin: auto; padding: 24px max(20px, env(safe-area-inset-right)) 32px max(20px, env(safe-area-inset-left)); }
+.about-shell a { color: #80502e; text-underline-offset: 4px; }
+.about-shell a:focus-visible, .about-skip:focus-visible { outline: 3px solid #80502e; outline-offset: 5px; border-radius: 4px; }
+.about-skip { position: absolute; top: -100px; left: 20px; padding: 12px; background: #fff7e9; z-index: 10; }
+.about-skip:focus { top: 10px; }
+.about-header { display: flex; gap: 16px; margin-bottom: 26px; }
+.about-brand { display: flex; gap: 12px; align-items: center; text-decoration: none; font-size: 22px; font-weight: 700; }
+.about-brand small { display: block; font-size: 11px; font-weight: 400; color: #796957; margin-top: 3px; }
+.about-back { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 44px; padding: 10px 16px; background: #fff7e9; border: 1px solid #d8bea0; border-radius: 24px; text-decoration: none; font-size: 14px; white-space: nowrap; }
+.about-hero { display: grid; grid-template-columns: minmax(0, 1fr) 240px; align-items: center; gap: 28px; padding: 36px; border-radius: 28px; border: 1px solid #d2b08b; background: repeating-linear-gradient(2deg, transparent 0 29px, #9c6e3c08 30px, transparent 32px), linear-gradient(120deg, #fff4e1, #e7c79f); }
+.about-eyebrow { color: #946d48; font-size: 11px; font-weight: 700; letter-spacing: .13em; margin: 0 0 12px; }
+.about-hero h1 { font-size: 16px; color: #705038; margin: 0; }
+.about-lead { font-family: "Yu Mincho", "Hiragino Mincho ProN", serif; font-size: clamp(30px, 5vw, 46px); font-weight: 700; line-height: 1.5; margin: 16px 0; }
+.about-hero p:last-child, .about-card p, .about-feedback p { font-size: 14px; line-height: 1.95; }
+.about-art { max-width: 100%; height: auto; }
+.about-nav { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 20px 4px; font-size: 13px; }
+.about-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.about-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.about-card { min-width: 0; padding: 28px; background: #fffaf1; border: 1px solid #ddc6ab; border-radius: 22px; scroll-margin-top: 18px; }
+.about-card h2, .about-feedback h2 { font-size: 21px; line-height: 1.6; margin: 0 0 16px; }
+.about-card ol, .about-songs { padding-left: 20px; font-size: 14px; line-height: 1.9; }
+.about-card li { margin-bottom: 10px; }
+.about-modes { font-size: 14px; line-height: 1.85; }
+.about-modes div { margin-top: 16px; }
+.about-modes dt { font-weight: 700; color: #80502e; }
+.about-modes dd { margin: 4px 0 0; }
+.about-note { color: #796957; }
+.about-score { margin: 0 0 20px; }
+.about-score div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 0; border-bottom: 1px solid #ead9c3; font-size: 14px; }
+.about-score dt { font-weight: 700; }
+.about-score dd { margin: 0; }
+.about-feedback { display: flex; align-items: center; gap: 24px; margin-top: 22px; padding: 28px; border-radius: 22px; background: #e8d3b7; }
+.about-feedback > div { min-width: 0; flex: 1; }
+.about-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 30px 0 0; margin: 0; color: #796957; font-size: 12px; }
+@media (max-width: 680px) {
+  .about-shell { padding-top: 18px; }
+  .about-hero { grid-template-columns: minmax(0, 1fr) 70px; gap: 12px; padding: 24px 20px; }
+  .about-grid { grid-template-columns: minmax(0, 1fr); }
+  .about-card { padding: 22px; }
+  .about-art { align-self: start; margin-top: 30px; }
+  .about-feedback { align-items: stretch; flex-direction: column; padding: 22px; gap: 10px; }
+  .about-brand { font-size: 19px; }
+  .about-back { padding: 10px 12px; gap: 8px; }
+}
+
