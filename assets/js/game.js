@@ -1042,13 +1042,14 @@
         }
         exportMobileAppButton.disabled = true;
         try {
-          const [styleResponse, scriptResponse, sharingResponse] = await Promise.all([
+          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse] = await Promise.all([
             fetch("./assets/css/style.css", { cache: "no-store" }),
             fetch("./assets/js/game.js", { cache: "no-store" }),
-            fetch("./assets/js/sharing.js", { cache: "no-store" })
+            fetch("./assets/js/sharing.js", { cache: "no-store" }),
+            fetch("./assets/js/result-share.js", { cache: "no-store" })
           ]);
-          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
-          const [styleText, scriptText, sharingText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text()]);
+          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText, sharingText, resultShareText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
             id: id.startsWith("community-") ? `user-${id}` : id,
             name,
@@ -1070,8 +1071,10 @@
           const oldScript = portableDocument.querySelector('script[src="assets/js/game.js"]');
           const portableScript = document.createElement("script");
           portableDocument.querySelector('script[src="assets/js/sharing.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/result-share.js"]')?.remove();
+          portableDocument.querySelector("#resultPanel").hidden = true;
           const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
           oldScript.replaceWith(portableScript);
           const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -2219,6 +2222,13 @@
         document.getElementById("resultMiss").textContent = missCount.toLocaleString();
         document.getElementById("resultCombo").textContent = bestCombo.toLocaleString();
         document.getElementById("resultAccuracy").textContent = judged ? `${Math.round(accuracyPoints / judged)}%` : "—%";
+        document.dispatchEvent(new CustomEvent("otoiro:result", { detail: {
+          song: document.getElementById("resultSong").textContent,
+          score, perfect: perfectCount, good: goodCount, miss: missCount, combo: bestCombo,
+          accuracy: judged ? `${Math.round(accuracyPoints / judged)}%` : "—%",
+          mode: practiceMode ? "練習モード" : "通常プレイ",
+          bpm: Math.round(chart.bpm / runTempoScale)
+        } }));
         resultPanel.hidden = false;
         resultPanel.focus({ preventScroll: true });
         window.scrollTo({ top: 0, behavior: "instant" });
