@@ -152,7 +152,9 @@
   }
   function withHashtags(text) {
     const hashtags = ["#おといろ", "#カリンバ", "#音ゲー"];
-    const missing = hashtags.filter(tag => !text.includes(tag));
+    const message = text.trim();
+    if (!message) return "";
+    const missing = hashtags.filter(tag => !message.includes(tag));
     return missing.length ? `${text.trim()}\n${missing.join(" ")}` : text.trim();
   }
   window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, publicBaseURL, withHashtags });
