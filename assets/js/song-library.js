@@ -1,10 +1,11 @@
 (() => {
   "use strict";
   const labels = ["かんたん", "ふつう", "むずかしい", "めちゃむず"];
-  // Original chart tempo. Each chord tone counts as one note; ignore lead-in silence.
+  // Original chart tempo. Also account for chord technique so long, calm songs
+  // are not rated as easy merely because their overall note density is low.
   function measure(chart) {
     const times = chart.steps.map(([step]) => step * 30 / chart.bpm).sort((a, b) => a - b);
-    if (!times.length) return { level: 0, label: labels[0], count: 0, average: 0, peak: 0, index: 0 };
+    if (!times.length) return { level: 0, label: labels[0], count: 0, average: 0, peak: 0, harmony: 0, index: 0 };
     const span = times[times.length - 1] - times[0] + 60 / chart.bpm;
     const average = times.length / span;
     const windowSeconds = Math.min(4, span);
@@ -13,9 +14,19 @@
       while (times[right] - times[left] >= windowSeconds) left++;
       peak = Math.max(peak, (right - left + 1) / windowSeconds);
     }
-    const index = average * .65 + peak * .35;
+    const chordSizes = new Map();
+    for (const [step] of chart.steps) chordSizes.set(step, (chordSizes.get(step) || 0) + 1);
+    const sizes = [...chordSizes.values()];
+    const chordTones = sizes.reduce((sum, size) => sum + (size > 1 ? size : 0), 0);
+    const chordToneRatio = chordTones / times.length;
+    const extraTonesPerOnset = (times.length - sizes.length) / sizes.length;
+    const largestChord = Math.max(...sizes);
+    const harmony = chordToneRatio * .5
+      + extraTonesPerOnset * .4
+      + Math.max(0, largestChord - 2) * .1;
+    const index = average * .65 + peak * .35 + harmony;
     const level = index < 3 ? 0 : index < 3.6 ? 1 : index < 5 ? 2 : 3;
-    return { level, label: labels[level], count: times.length, average, peak, index };
+    return { level, label: labels[level], count: times.length, average, peak, harmony, index };
   }
   function mount({ select, getSongs }) {
     const grid = document.getElementById("songCards");
@@ -107,4 +118,3 @@
   }
   window.OtoiroSongLibrary = Object.freeze({ measure, mount });
 })();
-
