@@ -2451,7 +2451,7 @@
         if (showMessage) showCreatorStatus("試聴を停止しました。");
       }
 
-      function getArpeggiatedEvents(steps, directLanes) {
+      function getArpeggiatedEvents(steps, directLanes, bpm) {
         const grouped = new Map();
         for (const [step, noteIndex] of steps) {
           const lane = directLanes ? noteIndex : scaleToLane[noteIndex];
@@ -2460,7 +2460,8 @@
         }
         const events = [];
         let leadIn = 0;
-        for (const [step, lanes] of grouped) {
+        let previousStep = null;
+        for (const [step, lanes] of [...grouped].sort((a,b)=>a[0]-b[0])) {
           const hands = {
             left: lanes.filter((lane) => notes[lane].side === "left"),
             right: lanes.filter((lane) => notes[lane].side === "right")
@@ -2472,8 +2473,12 @@
           }
           const orderedLanes = [...hands.left, ...hands.right]
             .sort((a, b) => notes[a].semitones - notes[b].semitones);
+          // Keep the lead-in inside the latter half of the preceding gap.
+          // Otherwise a dense chord can cover or overtake the previous note.
+          const availableDuration = previousStep === null ? maxArpeggioDuration
+            : Math.min(maxArpeggioDuration, (step - previousStep) * 30 / bpm / 2);
           const interval = orderedLanes.length > 1
-            ? Math.min(arpeggioNoteInterval, maxArpeggioDuration / (orderedLanes.length - 1))
+            ? Math.min(arpeggioNoteInterval, availableDuration / (orderedLanes.length - 1))
             : 0;
           leadIn = Math.max(leadIn, interval * Math.max(0, orderedLanes.length - 1));
           const handIndexes = { left: 0, right: 0 };
@@ -2488,6 +2493,7 @@
               handIndex: handIndexes[handSide]++
             });
           }
+          previousStep = step;
         }
         events.sort((a, b) => a.step - b.step || a.offset - b.offset);
         return { events, leadIn };
@@ -2618,7 +2624,7 @@
           return;
         }
         stopPreview();
-        const { events, leadIn } = getArpeggiatedEvents(previewChart.steps, true);
+        const { events, leadIn } = getArpeggiatedEvents(previewChart.steps, true, previewChart.bpm);
         const beatDuration = 60000 / previewChart.bpm;
         const startAt = performance.now() + leadIn;
         previewChartButton.disabled = true;
@@ -3973,7 +3979,7 @@
       function createActiveNotes(selectedChart, startBeat) {
         const startStep = startBeat * 2;
         const selectedSteps = selectedChart.steps.filter(([step]) => step >= startStep);
-        const { events } = getArpeggiatedEvents(selectedSteps, selectedChart.directLanes);
+        const { events } = getArpeggiatedEvents(selectedSteps, selectedChart.directLanes, selectedChart.bpm);
         const result = events.map(({ step, lane, offset, handSide, handIndex }) => ({
             step,
             handSide,
