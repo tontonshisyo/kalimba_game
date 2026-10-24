@@ -25,7 +25,9 @@
       + extraTonesPerOnset * .4
       + Math.max(0, largestChord - 2) * .1;
     const index = average * .65 + peak * .35 + harmony;
-    const level = index < 3 ? 0 : index < 3.6 ? 1 : index < 5 ? 2 : 3;
+    // Reserve the highest rating for songs that sustain their difficulty.
+    // A short song with one dense chord can still be hard, but not "めちゃむず".
+    const level = index < 3 ? 0 : index < 3.6 ? 1 : index < 5 || span < 30 ? 2 : 3;
     return { level, label: labels[level], count: times.length, average, peak, harmony, index };
   }
   function mount({ select, getSongs }) {
