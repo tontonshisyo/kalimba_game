@@ -148,15 +148,6 @@
           <p class="key-hit-hint"><span class="touch-hint">横画面がおすすめ · 光る音階キーをタップして演奏</span><span class="keyboard-hint">標準17鍵の並び · 左端 D6 ／ 中央 C4 ／ 右端 E6 · キー 1–0、Q–U</span></p>
         </div>
 
-        <details class="game-settings accomp-live-settings" id="accompLiveSettings" hidden>
-          <summary>演奏中の伴奏バランス</summary>
-          <div class="accomp-live-controls">
-            <label>チェロ <input type="range" min="0" max="100" value="46" data-accomp-volume="cello"><input type="checkbox" data-accomp-mute="cello"> 消音</label>
-            <label>ヴィオラ <input type="range" min="0" max="100" value="37" data-accomp-volume="viola"><input type="checkbox" data-accomp-mute="viola"> 消音</label>
-            <label>ヴァイオリン <input type="range" min="0" max="100" value="29" data-accomp-volume="violin"><input type="checkbox" data-accomp-mute="violin"> 消音</label>
-          </div>
-        </details>
-
         <details class="game-settings">
           <summary>音と表示の設定</summary>
           <div class="settings-list">
@@ -367,7 +358,7 @@
   </dialog>
   <dialog id="accompanimentDialog" class="orientation-dialog accompaniment-dialog" aria-labelledby="accompTitle">
     <h2 id="accompTitle">弦楽器の伴奏</h2>
-    <p>メロディーの音からコード候補を組み立てます。拍子なしの場合は4拍ごとにコードを推定します。</p>
+    <p>製作者向けの機能です。メロディーの音から伴奏を作って編集・試聴できます。通常プレイ中には伴奏は鳴りません。拍子なしの場合は4拍ごとにコードを推定します。</p>
     <div class="accomp-controls">
       <label>伴奏スタイル<select id="accompStyle"><option value="chamber">室内楽</option><option value="pizzicato">ピチカート</option><option value="dreamy">幻想的</option><option value="simple">シンプル</option></select></label>
       <label>候補<select id="accompCandidate"><option value="0">候補 1</option><option value="1">候補 2</option><option value="2">候補 3</option></select></label>
@@ -437,4 +428,3 @@
   <script src="assets/js/feedback.js" defer></script>
 </body>
 </html>
-

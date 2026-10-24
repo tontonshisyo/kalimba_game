@@ -755,11 +755,6 @@
     .accomp-note-tools input { width: 94px; }
     .accomp-seek { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #60452d; font-size: 11px; }
     .accomp-seek input { flex: 1; accent-color: #95633e; }
-    .accomp-live-settings { margin: 10px 0; padding: 10px 14px; }
-    .accomp-live-settings summary { font-size: 12px; }
-    .accomp-live-controls { display: flex; flex-wrap: wrap; gap: 12px 22px; padding-top: 10px; }
-    .accomp-live-controls label { display: flex; align-items: center; gap: 7px; color: #60452d; font-size: 11px; }
-    .accomp-live-controls input[type="range"] { width: 84px; accent-color: #95633e; }
     @media (max-width: 620px) { .accompaniment-dialog { padding: 14px; } .accomp-part-controls > * { flex: 1 1 42%; } .accomp-note-tools label { flex: 1 1 28%; } .accomp-note-tools input, .accomp-note-tools select { width: 100%; box-sizing: border-box; } }
     .free-video-dialog { width: min(540px, calc(100% - 24px)); text-align: left; }
     .free-video-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
@@ -906,15 +901,6 @@
           <div class="key-row" id="keyRow" aria-label="17鍵カリンバの音階。左端D6、中央C4、右端E6"></div>
           <p class="key-hit-hint"><span class="touch-hint">横画面がおすすめ · 光る音階キーをタップして演奏</span><span class="keyboard-hint">標準17鍵の並び · 左端 D6 ／ 中央 C4 ／ 右端 E6 · キー 1–0、Q–U</span></p>
         </div>
-
-        <details class="game-settings accomp-live-settings" id="accompLiveSettings" hidden>
-          <summary>演奏中の伴奏バランス</summary>
-          <div class="accomp-live-controls">
-            <label>チェロ <input type="range" min="0" max="100" value="46" data-accomp-volume="cello"><input type="checkbox" data-accomp-mute="cello"> 消音</label>
-            <label>ヴィオラ <input type="range" min="0" max="100" value="37" data-accomp-volume="viola"><input type="checkbox" data-accomp-mute="viola"> 消音</label>
-            <label>ヴァイオリン <input type="range" min="0" max="100" value="29" data-accomp-volume="violin"><input type="checkbox" data-accomp-mute="violin"> 消音</label>
-          </div>
-        </details>
 
         <details class="game-settings">
           <summary>音と表示の設定</summary>
@@ -1124,7 +1110,7 @@
   </dialog>
   <dialog id="accompanimentDialog" class="orientation-dialog accompaniment-dialog" aria-labelledby="accompTitle">
     <h2 id="accompTitle">弦楽器の伴奏</h2>
-    <p>メロディーの音からコード候補を組み立てます。拍子なしの場合は4拍ごとにコードを推定します。</p>
+    <p>製作者向けの機能です。メロディーの音から伴奏を作って編集・試聴できます。通常プレイ中には伴奏は鳴りません。拍子なしの場合は4拍ごとにコードを推定します。</p>
     <div class="accomp-controls">
       <label>伴奏スタイル<select id="accompStyle"><option value="chamber">室内楽</option><option value="pizzicato">ピチカート</option><option value="dreamy">幻想的</option><option value="simple">シンプル</option></select></label>
       <label>候補<select id="accompCandidate"><option value="0">候補 1</option><option value="1">候補 2</option><option value="2">候補 3</option></select></label>
@@ -2321,7 +2307,6 @@
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
       let accompanimentEditor = null;
-      let accompanimentScheduler = null;
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -2394,7 +2379,6 @@
       let practiceNote = null;
       let runTravelTime = travelTime;
       let runTempoScale = 1;
-      let accompanimentStartOffset = 0;
       let activeNotes = [];
       let freeNotes = [];
       let freeRecording = [];
@@ -3598,11 +3582,7 @@
           return () => scheduled.forEach((timer) => clearTimeout(timer));
         }
       });
-      accompanimentScheduler = accompanimentEditor?.scheduler || null;
       accompanimentEditor?.setModel(charts[songSelect.value]?.accompaniment);
-      const liveAccompanimentSettings = document.getElementById("accompLiveSettings");
-      for (const input of liveAccompanimentSettings.querySelectorAll("[data-accomp-volume]")) input.addEventListener("input", () => accompanimentScheduler?.setPart(input.dataset.accompVolume, { volume: Number(input.value) }));
-      for (const input of liveAccompanimentSettings.querySelectorAll("[data-accomp-mute]")) input.addEventListener("change", () => accompanimentScheduler?.setPart(input.dataset.accompMute, { muted: input.checked }));
       const initialProjectRestore = restoreProjectSongs();
       function loadSettings() {
         try {
@@ -4140,9 +4120,8 @@
             setNextNote();
           }
         }
-        accompanimentScheduler?.update(elapsed - runTravelTime + accompanimentStartOffset, activeNotes.length ? combo / activeNotes.length : 0, state === "playing");
-        const lastTime = activeNotes[activeNotes.length - 1].time;
-        if (!practiceNote && elapsed > lastTime + 2.8) finishGame();
+        const lastNote = activeNotes[activeNotes.length - 1];
+        if (lastNote && !practiceNote && elapsed > lastNote.time + 2.8) finishGame();
       }
 
       function handlePageVisibilityChange() {
@@ -4223,6 +4202,9 @@
       }
 
       function getKalimbaAudio() {
+        if (!audioContext || audioContext.state === "closed") {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (kalimbaAudio?.context === audioContext) return kalimbaAudio;
         const input = audioContext.createGain();
         const dry = audioContext.createGain();
@@ -4593,7 +4575,6 @@
           const pauseDuration = now - pausedAt;
           startedAt += pauseDuration;
           if (practiceHoldAt !== null) practiceHoldAt += pauseDuration;
-          accompanimentScheduler?.seek(((practiceHoldAt ?? now) - startedAt) / 1000 - runTravelTime + accompanimentStartOffset);
           state = "playing";
           app.classList.add("is-playing");
           resizeCanvas();
@@ -4609,17 +4590,7 @@
         if (startBeat === null) return;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
-        accompanimentStartOffset = startBeat * 60 / (chart.bpm / runTempoScale);
         activeNotes = createActiveNotes(chart, startBeat);
-        accompanimentScheduler?.reset(chart.accompaniment, chart.bpm / runTempoScale, getKalimbaAudio().context);
-        accompanimentScheduler?.seek(accompanimentStartOffset);
-        liveAccompanimentSettings.hidden = !chart.accompaniment;
-        if (chart.accompaniment) for (const part of ["cello","viola","violin"]) {
-          const data = chart.accompaniment.parts[part];
-          const volume = liveAccompanimentSettings.querySelector(`[data-accomp-volume="${part}"]`);
-          const mute = liveAccompanimentSettings.querySelector(`[data-accomp-mute="${part}"]`);
-          if (data && volume && mute) { volume.value = String(data.volume); mute.checked = data.muted; }
-        }
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -4660,15 +4631,11 @@
         practiceMode = practiceModeInput.checked;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
-        accompanimentStartOffset = startBeat * 60 / (chart.bpm / runTempoScale);
         practiceHoldAt = null;
         practiceNote = null;
         isTestPlay = true;
         selectionControls.forEach((control) => { control.disabled = true; });
         activeNotes = createActiveNotes(chart, startBeat);
-        accompanimentScheduler?.reset(chart.accompaniment, chart.bpm / runTempoScale, getKalimbaAudio().context);
-        accompanimentScheduler?.seek(accompanimentStartOffset);
-        liveAccompanimentSettings.hidden = !chart.accompaniment;
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
         perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
@@ -4690,9 +4657,6 @@
       }
 
       function returnFromTestPlay(message) {
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         document.getElementById("freePlayButton").hidden = false;
         state = "ready";
         isTestPlay = false;
@@ -4719,7 +4683,6 @@
 
       function pauseGame() {
         if (state !== "playing") return;
-        accompanimentScheduler?.update(0, 0, false);
         document.getElementById("freePlayButton").hidden = true;
         clearPointerInteraction();
         pausedAt = performance.now();
@@ -4739,9 +4702,6 @@
 
       function stopGame() {
         if (state !== "paused" && state !== "free") return;
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         if (isTutorial) {
           isTutorial = false;
           chart = charts[songSelect.value];
@@ -4777,9 +4737,6 @@
       }
 
       function finishGame() {
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         document.getElementById("freePlayButton").hidden = false;
         if (isTutorial) {
           state = "paused";
@@ -5069,4 +5026,3 @@
   
 </body>
 </html>
-

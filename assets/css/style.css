@@ -739,11 +739,6 @@
     .accomp-note-tools input { width: 94px; }
     .accomp-seek { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #60452d; font-size: 11px; }
     .accomp-seek input { flex: 1; accent-color: #95633e; }
-    .accomp-live-settings { margin: 10px 0; padding: 10px 14px; }
-    .accomp-live-settings summary { font-size: 12px; }
-    .accomp-live-controls { display: flex; flex-wrap: wrap; gap: 12px 22px; padding-top: 10px; }
-    .accomp-live-controls label { display: flex; align-items: center; gap: 7px; color: #60452d; font-size: 11px; }
-    .accomp-live-controls input[type="range"] { width: 84px; accent-color: #95633e; }
     @media (max-width: 620px) { .accompaniment-dialog { padding: 14px; } .accomp-part-controls > * { flex: 1 1 42%; } .accomp-note-tools label { flex: 1 1 28%; } .accomp-note-tools input, .accomp-note-tools select { width: 100%; box-sizing: border-box; } }
     .free-video-dialog { width: min(540px, calc(100% - 24px)); text-align: left; }
     .free-video-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
@@ -754,4 +749,3 @@
     .tutorial-lessons { padding-left: 24px; text-align: left; font-size: 14px; line-height: 1.8; margin: 0 0 20px; }
     .tutorial-guide { position: absolute; z-index: 4; top: 52px; left: 50%; transform: translateX(-50%); width: min(400px, calc(100% - 32px)); box-sizing: border-box; margin: 0; padding: 8px 12px; border-radius: 12px; background: #fff4dfeb; color: #573b29; font-size: 13px; line-height: 1.5; text-align: center; pointer-events: none; }
     .app:not(.is-playing) .tutorial-guide { display: none; }
-

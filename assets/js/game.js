@@ -90,7 +90,6 @@
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
       let accompanimentEditor = null;
-      let accompanimentScheduler = null;
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -163,7 +162,6 @@
       let practiceNote = null;
       let runTravelTime = travelTime;
       let runTempoScale = 1;
-      let accompanimentStartOffset = 0;
       let activeNotes = [];
       let freeNotes = [];
       let freeRecording = [];
@@ -1367,11 +1365,7 @@
           return () => scheduled.forEach((timer) => clearTimeout(timer));
         }
       });
-      accompanimentScheduler = accompanimentEditor?.scheduler || null;
       accompanimentEditor?.setModel(charts[songSelect.value]?.accompaniment);
-      const liveAccompanimentSettings = document.getElementById("accompLiveSettings");
-      for (const input of liveAccompanimentSettings.querySelectorAll("[data-accomp-volume]")) input.addEventListener("input", () => accompanimentScheduler?.setPart(input.dataset.accompVolume, { volume: Number(input.value) }));
-      for (const input of liveAccompanimentSettings.querySelectorAll("[data-accomp-mute]")) input.addEventListener("change", () => accompanimentScheduler?.setPart(input.dataset.accompMute, { muted: input.checked }));
       const initialProjectRestore = restoreProjectSongs();
       function loadSettings() {
         try {
@@ -1909,9 +1903,8 @@
             setNextNote();
           }
         }
-        accompanimentScheduler?.update(elapsed - runTravelTime + accompanimentStartOffset, activeNotes.length ? combo / activeNotes.length : 0, state === "playing");
-        const lastTime = activeNotes[activeNotes.length - 1].time;
-        if (!practiceNote && elapsed > lastTime + 2.8) finishGame();
+        const lastNote = activeNotes[activeNotes.length - 1];
+        if (lastNote && !practiceNote && elapsed > lastNote.time + 2.8) finishGame();
       }
 
       function handlePageVisibilityChange() {
@@ -1992,6 +1985,9 @@
       }
 
       function getKalimbaAudio() {
+        if (!audioContext || audioContext.state === "closed") {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         if (kalimbaAudio?.context === audioContext) return kalimbaAudio;
         const input = audioContext.createGain();
         const dry = audioContext.createGain();
@@ -2362,7 +2358,6 @@
           const pauseDuration = now - pausedAt;
           startedAt += pauseDuration;
           if (practiceHoldAt !== null) practiceHoldAt += pauseDuration;
-          accompanimentScheduler?.seek(((practiceHoldAt ?? now) - startedAt) / 1000 - runTravelTime + accompanimentStartOffset);
           state = "playing";
           app.classList.add("is-playing");
           resizeCanvas();
@@ -2378,17 +2373,7 @@
         if (startBeat === null) return;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
-        accompanimentStartOffset = startBeat * 60 / (chart.bpm / runTempoScale);
         activeNotes = createActiveNotes(chart, startBeat);
-        accompanimentScheduler?.reset(chart.accompaniment, chart.bpm / runTempoScale, getKalimbaAudio().context);
-        accompanimentScheduler?.seek(accompanimentStartOffset);
-        liveAccompanimentSettings.hidden = !chart.accompaniment;
-        if (chart.accompaniment) for (const part of ["cello","viola","violin"]) {
-          const data = chart.accompaniment.parts[part];
-          const volume = liveAccompanimentSettings.querySelector(`[data-accomp-volume="${part}"]`);
-          const mute = liveAccompanimentSettings.querySelector(`[data-accomp-mute="${part}"]`);
-          if (data && volume && mute) { volume.value = String(data.volume); mute.checked = data.muted; }
-        }
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -2429,15 +2414,11 @@
         practiceMode = practiceModeInput.checked;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
-        accompanimentStartOffset = startBeat * 60 / (chart.bpm / runTempoScale);
         practiceHoldAt = null;
         practiceNote = null;
         isTestPlay = true;
         selectionControls.forEach((control) => { control.disabled = true; });
         activeNotes = createActiveNotes(chart, startBeat);
-        accompanimentScheduler?.reset(chart.accompaniment, chart.bpm / runTempoScale, getKalimbaAudio().context);
-        accompanimentScheduler?.seek(accompanimentStartOffset);
-        liveAccompanimentSettings.hidden = !chart.accompaniment;
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
         perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
@@ -2459,9 +2440,6 @@
       }
 
       function returnFromTestPlay(message) {
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         document.getElementById("freePlayButton").hidden = false;
         state = "ready";
         isTestPlay = false;
@@ -2488,7 +2466,6 @@
 
       function pauseGame() {
         if (state !== "playing") return;
-        accompanimentScheduler?.update(0, 0, false);
         document.getElementById("freePlayButton").hidden = true;
         clearPointerInteraction();
         pausedAt = performance.now();
@@ -2508,9 +2485,6 @@
 
       function stopGame() {
         if (state !== "paused" && state !== "free") return;
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         if (isTutorial) {
           isTutorial = false;
           chart = charts[songSelect.value];
@@ -2546,9 +2520,6 @@
       }
 
       function finishGame() {
-        accompanimentScheduler?.update(0, 0, false);
-        accompanimentScheduler?.reset(null, 100, audioContext);
-        liveAccompanimentSettings.hidden = true;
         document.getElementById("freePlayButton").hidden = false;
         if (isTutorial) {
           state = "paused";
@@ -2832,4 +2803,3 @@
         });
       }
     })();
-
