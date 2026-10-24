@@ -1325,7 +1325,7 @@
             signal: AbortSignal.timeout(15000),
             headers: { apikey: config.publishableKey }
           });
-          if (!response.ok) throw new Error("公開曲テーブルを取得できません。");
+          if (response.status === 404) { console.warn("公式曲テーブルが未設定です。Supabaseでadmin-published-songs.sqlを実行してください。"); return; } if (!response.ok) throw new Error("公開曲テーブルを取得できません。");
           const rows = await response.json();
           if (!Array.isArray(rows)) throw new Error("公開曲の形式が正しくありません。");
           const allowedKeys = new Set(["C","G","D","A","E","B","Fs","Cs","F","Bb","Eb","Ab","Db","Gb","Cb"]);
