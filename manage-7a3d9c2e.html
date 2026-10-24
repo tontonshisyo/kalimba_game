@@ -12,7 +12,7 @@
     label { display: block; margin-bottom: 12px; }
     input, button, select, textarea { font: inherit; padding: 9px; max-width: 100%; box-sizing: border-box; }
     input { display: block; width: 100%; }
-    textarea { display: block; width: 100%; min-height: 120px; }
+    textarea { display: block; width: 100%; min-height: 160px; }
     button { cursor: pointer; border: 1px solid #987451; border-radius: 6px; background: #fffaf0; color: #493629; }
     button:disabled { opacity: .5; cursor: default; }
     .delete { color: #a12e23; margin-top: 10px; }
@@ -32,8 +32,22 @@
     <button id="adminLoginButton" type="submit">ログイン</button>
   </form>
   <section id="adminPanel" hidden>
+    <h2>全員に公開する曲を作成</h2>
+    <form id="officialSongForm">
+      <label>曲名（40文字まで）<input id="officialSongTitle" maxlength="40" required></label>
+      <label>BPM（30〜240）<input id="officialSongBpm" type="number" min="30" max="240" step="1" value="100" required></label>
+      <label>調<select id="officialSongKeySignature">
+        <option>C</option><option>G</option><option>D</option><option>A</option><option>E</option><option>B</option><option>Fs</option><option>Cs</option>
+        <option>F</option><option>Bb</option><option>Eb</option><option>Ab</option><option>Db</option><option>Gb</option><option>Cb</option>
+      </select></label>
+      <label>譜面（1行に「拍,音名」形式。例：0,C4）<textarea id="officialSongNotes" maxlength="100000" placeholder="0,C4&#10;1,E4&#10;2,G4" required></textarea></label>
+      <p>音名は標準17鍵の範囲（D4〜D6など）、拍は0以上で入力してください。1曲2000音までです。</p>
+      <button id="officialSongSubmit" type="submit">曲を登録して全員に公開</button>
+    </form>
+    <h2>登録済みの公開曲</h2>
+    <div id="officialSongs"></div>
     <div class="toolbar">
-      <label>管理するデータ<select id="adminKind"><option value="community_songs">投稿された曲</option><option value="beta_feedback">β版の意見箱</option></select></label>
+      <label>管理するデータ<select id="adminKind"><option value="beta_feedback">β版の意見箱</option></select></label>
       <button id="adminReload" type="button">一覧を更新</button>
       <button id="adminLogout" type="button">ログアウト</button>
     </div>
@@ -43,4 +57,3 @@
   <p id="adminStatus" role="status" aria-live="polite"></p>
 </main></body>
 </html>
-
