@@ -635,7 +635,7 @@
     }
     .chart-sharing { border: 1px solid #dac4a8; border-radius: 12px; padding: 14px; background: #f6ead7; }
     .chart-sharing [hidden] { display: none !important; }
-    .share-link-output { width: 100%; min-height: 88px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fffdf7; color: var(--text); font: 16px var(--sans); resize: vertical; overflow-wrap: anywhere; }
+    .share-link-output { width: 100%; min-height: 72px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fffdf7; color: var(--text); font: 16px var(--sans); line-height: 1.5; resize: vertical; }
     .shared-song-panel { padding: 18px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 16px; background: #f6ead7; }
     .shared-song-panel h2 { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
     .shared-song-panel p { font-size: 13px; line-height: 1.7; }
@@ -711,6 +711,40 @@
     .orientation-symbol { font-size: 36px; color: #95663e; }
     .orientation-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
     .orientation-actions button { min-height: 44px; }
+    .accompaniment-dialog { width: min(980px, calc(100% - 20px)); max-height: calc(100dvh - 20px); text-align: left; }
+    .accompaniment-dialog > h2, .accompaniment-dialog > p { text-align: center; }
+    .accomp-controls, .accomp-part-controls, .accomp-note-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+    .accomp-controls label, .accomp-part-controls label, .accomp-note-tools label { display: grid; gap: 4px; color: #60452d; font-size: 11px; font-weight: 700; }
+    .accomp-controls select, .accomp-part-controls select, .accomp-note-tools select, .accomp-note-tools input { min-height: 40px; padding: 7px 9px; border: 1px solid #d5bd9f; border-radius: 9px; background: #fffdf8; color: #573b29; font: 14px var(--sans); }
+    .accomp-chord-section, .accomp-part-section { margin: 14px 0; padding: 12px; border: 1px solid #e0c9a8; border-radius: 14px; background: #fffaf1; }
+    .accomp-chord-section h3 { margin: 0 0 10px; font-size: 13px; }
+    .accomp-chords { display: flex; gap: 8px; overflow-x: auto; padding: 2px; }
+    .accomp-chord { min-width: 94px; display: grid; gap: 4px; color: #765638; font-size: 10px; }
+    .accomp-chord select { min-height: 38px; padding: 6px; border: 1px solid #d5bd9f; border-radius: 8px; background: white; color: #573b29; font: 13px var(--sans); }
+    .accomp-part-controls { align-items: center; }
+    .accomp-part-controls .accomp-volume { min-width: 130px; }
+    .accomp-part-controls .accomp-volume input { accent-color: #95633e; }
+    .accomp-part-controls .accomp-toggle { display: flex; align-items: center; }
+    .accomp-roll-scroll { max-width: 100%; overflow: auto; overscroll-behavior: contain; border: 1px solid #e2d3bd; border-radius: 10px; background: linear-gradient(#fffdf8,#f9f0e1); touch-action: pan-x pan-y; }
+    .accomp-roll { display: block; min-height: 286px; }
+    .accomp-roll-line { stroke: #eadfce; stroke-width: .7; }
+    .accomp-roll-c { stroke: #d8c7ae; stroke-width: .9; }
+    .accomp-roll-octave { stroke: #cbb18e; stroke-width: 1.2; }
+    .accomp-roll-beat { stroke: #e5d8c5; stroke-width: .7; }
+    .accomp-roll-bar { stroke: #c7a67f; stroke-width: 1.3; }
+    .accomp-melody-mark { fill: #bcae97; opacity: .5; pointer-events: none; }
+    .accomp-note { fill: #b17a4e; stroke: #8c5c39; stroke-width: .8; cursor: grab; }
+    .accomp-note.is-selected { fill: #dd9f58; stroke: #69442e; stroke-width: 2; }
+    .accomp-note-tools { margin-top: 10px; }
+    .accomp-note-tools input { width: 94px; }
+    .accomp-seek { display: flex; align-items: center; gap: 10px; margin-top: 12px; color: #60452d; font-size: 11px; }
+    .accomp-seek input { flex: 1; accent-color: #95633e; }
+    .accomp-live-settings { margin: 10px 0; padding: 10px 14px; }
+    .accomp-live-settings summary { font-size: 12px; }
+    .accomp-live-controls { display: flex; flex-wrap: wrap; gap: 12px 22px; padding-top: 10px; }
+    .accomp-live-controls label { display: flex; align-items: center; gap: 7px; color: #60452d; font-size: 11px; }
+    .accomp-live-controls input[type="range"] { width: 84px; accent-color: #95633e; }
+    @media (max-width: 620px) { .accompaniment-dialog { padding: 14px; } .accomp-part-controls > * { flex: 1 1 42%; } .accomp-note-tools label { flex: 1 1 28%; } .accomp-note-tools input, .accomp-note-tools select { width: 100%; box-sizing: border-box; } }
     .free-video-dialog { width: min(540px, calc(100% - 24px)); text-align: left; }
     .free-video-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
     .free-video-range label, .free-video-comment { font-size: 13px; }

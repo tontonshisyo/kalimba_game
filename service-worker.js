@@ -13,6 +13,7 @@ const APP_FILES = [
   "./assets/js/result-share.js",
   "./assets/js/song-library.js",
   "./assets/js/free-video.js",
+  "./assets/js/accompaniment.js",
   "./assets/js/game.js",
   "./assets/js/feedback.js",
   "./assets/data/custom-charts.json",

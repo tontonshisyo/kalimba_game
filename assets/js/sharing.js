@@ -125,10 +125,16 @@
     url.hash = "";
     return url.href;
   }
+  function withHashtags(text) {
+    const hashtags = ["#おといろ", "#カリンバ", "#音ゲー"];
+    const missing = hashtags.filter(tag => !text.includes(tag));
+    return missing.length ? `${text.trim()}\n${missing.join(" ")}` : text.trim();
+  }
   async function createLink(song) {
     if (!song.steps.length || song.steps.length > 2000) throw new Error("共有できる音符は1〜2000個です。");
-    let raw = packSong(song);
-    let type = "b";
+    const hasExtensions = song.meter !== undefined || song.accompaniment;
+    let raw = hasExtensions ? encoder.encode(JSON.stringify([song.name, song.bpm, song.keySignature, song.steps, song.meter ?? null, song.accompaniment || null])) : packSong(song);
+    let type = hasExtensions ? "j" : "b";
     if (!raw) { raw = encoder.encode(JSON.stringify([song.name, song.bpm, song.keySignature, song.steps])); type = "j"; }
     if (typeof CompressionStream === "function" && typeof DecompressionStream === "function") {
       const compressed = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
@@ -147,15 +153,8 @@
       bytes = new Uint8Array(await boundedBytes(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))));
     }
     if (match[1] === "b" || match[1] === "g") return unpackSong(bytes);
-    const [name, bpm, keySignature, steps] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-    return { name, bpm, keySignature, steps };
-  }
-  function withHashtags(text) {
-    const hashtags = ["#おといろ", "#カリンバ", "#音ゲー"];
-    const message = text.trim();
-    if (!message) return "";
-    const missing = hashtags.filter(tag => !message.includes(tag));
-    return missing.length ? `${text.trim()}\n${missing.join(" ")}` : text.trim();
+    const [name, bpm, keySignature, steps, meter = 4, accompaniment = null] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    return { name, bpm, keySignature, steps, meter, accompaniment };
   }
   window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, publicBaseURL, withHashtags });
 })();
