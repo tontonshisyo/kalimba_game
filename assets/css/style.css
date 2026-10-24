@@ -169,6 +169,7 @@
     .sheet-hit-target:focus { stroke: #b37b32; stroke-width: 2; outline: none; }
     .sheet-drag-preview { fill: #d89c47; stroke: #80531e; opacity: .8; pointer-events: none; }
     .sheet-staff-line { stroke: #8c7c68; stroke-width: 1; }
+    .sheet-ledger-line { stroke: #493629; stroke-width: 1.2; stroke-linecap: round; pointer-events: none; }
     .sheet-beat-line { stroke: #e9e0d2; stroke-width: 1; }
     .sheet-bar-line { stroke: #bba98f; stroke-width: 1.5; }
     .sheet-clef { fill: #60452d; font-family: "Noto Music", "Segoe UI Symbol", serif; font-size: 70px; }

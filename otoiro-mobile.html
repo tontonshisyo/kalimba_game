@@ -196,6 +196,7 @@
     .sheet-hit-target:focus { stroke: #b37b32; stroke-width: 2; outline: none; }
     .sheet-drag-preview { fill: #d89c47; stroke: #80531e; opacity: .8; pointer-events: none; }
     .sheet-staff-line { stroke: #8c7c68; stroke-width: 1; }
+    .sheet-ledger-line { stroke: #493629; stroke-width: 1.2; stroke-linecap: round; pointer-events: none; }
     .sheet-beat-line { stroke: #e9e0d2; stroke-width: 1; }
     .sheet-bar-line { stroke: #bba98f; stroke-width: 1.5; }
     .sheet-clef { fill: #60452d; font-family: "Noto Music", "Segoe UI Symbol", serif; font-size: 70px; }
@@ -1873,6 +1874,7 @@
       const charts = {
         twinkle: {
           bpm: 80,
+          meter: 4,
           steps: [
             [0,0],[1,0],[2,4],[3,4],[4,5],[5,5],[6,4],[8,3],[9,3],[10,2],[11,2],[12,1],[13,1],[14,0],
             [16,4],[17,4],[18,3],[19,3],[20,2],[21,2],[22,1],[24,4],[25,4],[26,3],[27,3],[28,2],[29,2],[30,1],
@@ -1882,6 +1884,7 @@
         },
         maryHadALittleLamb: {
           bpm: 76,
+          meter: 4,
           steps: [
             [0,8],[0,3],[1,10],[1.5,12],[2,4],[3,12],[4,8],[4,3],
             [5,10],[5,3],[6,3],[7,10],[8,7],[8,12],[9,12],[10,12],
@@ -2038,6 +2041,7 @@
       let runTravelTime = travelTime;
       let runTempoScale = 1;
       let activeNotes = [];
+      let activeBarLines = [];
       let freeNotes = [];
       let freeRecording = [];
       let freeRecordStartedAt = null;
@@ -2267,6 +2271,21 @@
 
         for (const [beat, lanes] of eventsByBeat) {
           const x = left + beat * beatWidth;
+          const ledgerSteps = new Set();
+          for (const lane of lanes) {
+            const stepFromBottom = pitchIndex(notes[lane]) - basePitch;
+            if (stepFromBottom <= -2) {
+              for (let ledgerStep = -2; ledgerStep >= stepFromBottom; ledgerStep -= 2) ledgerSteps.add(ledgerStep);
+            } else if (stepFromBottom >= 10) {
+              for (let ledgerStep = 10; ledgerStep <= stepFromBottom; ledgerStep += 2) ledgerSteps.add(ledgerStep);
+            }
+          }
+          for (const ledgerStep of ledgerSteps) {
+            const ledgerY = staffBottom - ledgerStep * (staffGap / 2);
+            fragment.append(createSvgElement("line", {
+              x1: x - 9, y1: ledgerY, x2: x + 9, y2: ledgerY, class: "sheet-ledger-line"
+            }));
+          }
           lanes.forEach((lane) => {
             const note = notes[lane];
             const soundingNote = getSignatureNote(lane, creatorKeySignatureInput.value);
@@ -3645,6 +3664,22 @@
         }
 
         if (state !== "free") {
+          const elapsed = (renderTime - startedAt) / 1000;
+          ctx.save();
+          for (const bar of activeBarLines) {
+            if (elapsed < bar.time - runTravelTime || elapsed > bar.time + .08) continue;
+            const depth = Math.min(1, Math.max(0, (elapsed - (bar.time - runTravelTime)) / runTravelTime));
+            const left = geometry.laneBounds(0, 1 - depth).left;
+            const right = geometry.laneBounds(laneCount - 1, 1 - depth).right;
+            const y = geometry.lanePoint(0, depth).y;
+            ctx.beginPath();
+            ctx.moveTo(left, y);
+            ctx.lineTo(right, y);
+            ctx.strokeStyle = `rgba(255, 239, 210, ${.1 + depth * .12})`;
+            ctx.lineWidth = 1 + depth * .6;
+            ctx.stroke();
+          }
+          ctx.restore();
           const pulse = state === "playing" ? (Math.sin(now / 170) + 1) * .5 : .22;
           const leftEdge = geometry.laneBounds(0, 0).left;
           const rightEdge = geometry.laneBounds(laneCount - 1, 0).right;
@@ -4061,6 +4096,24 @@
         return result;
       }
 
+      function createActiveBarLines(selectedChart, startBeat) {
+        const meter = Number(selectedChart.meter);
+        const beatsPerBar = meter === 6 ? 3 : [2, 3, 4, 5].includes(meter) ? meter : null;
+        if (!beatsPerBar) return [];
+        const lastStep = Math.max(...selectedChart.steps.filter(([step]) => step >= startBeat * 2).map(([step]) => step));
+        if (!Number.isFinite(lastStep)) return [];
+        const lastBeat = lastStep / 2;
+        const firstBar = Math.ceil(startBeat / beatsPerBar) * beatsPerBar;
+        const lines = [];
+        for (let beat = firstBar; beat <= lastBeat; beat += beatsPerBar) {
+          lines.push({
+            beat,
+            time: runTravelTime + (beat - startBeat) * (60 / selectedChart.bpm) * runTempoScale
+          });
+        }
+        return lines;
+      }
+
       const portraitQuery = window.matchMedia("(orientation: portrait)");
       const orientationDialog = document.getElementById("orientationDialog");
       const orientationContinue = document.getElementById("orientationContinue");
@@ -4168,6 +4221,7 @@
         cancelSheetGesture();
         clearPointerInteraction();
         activeNotes = [];
+        activeBarLines = [];
         freeNotes = [];
         effects = [];
         practiceHoldAt = null;
@@ -4229,6 +4283,7 @@
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
         activeNotes = createActiveNotes(chart, startBeat);
+        activeBarLines = createActiveBarLines(chart, startBeat);
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -4274,6 +4329,7 @@
         isTestPlay = true;
         selectionControls.forEach((control) => { control.disabled = true; });
         activeNotes = createActiveNotes(chart, startBeat);
+        activeBarLines = createActiveBarLines(chart, startBeat);
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
         perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
