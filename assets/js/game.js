@@ -1108,7 +1108,7 @@
           }
         }
         if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
-        const localSongs = makerSongs.filter(s => !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
+        const localSongs = makerSongs.filter(s => !s.id.startsWith('user-catalog-') && !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
         const mergedSongs = [...new Map([...restoredSongs, ...localSongs].map((song) => [song.id, song])).values()];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
@@ -1276,7 +1276,7 @@
         for (const song of stored) {
           if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
           if (removedBundledSongIds.has(song.id)) continue;
-          if (['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id) && !window.OTOIRO_PORTABLE_APP) continue;
+          if ((song.id.startsWith('user-catalog-') || ['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id)) && !window.OTOIRO_PORTABLE_APP) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
             const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);

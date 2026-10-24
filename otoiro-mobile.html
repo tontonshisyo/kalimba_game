@@ -1255,7 +1255,29 @@
     const [name, bpm, keySignature, steps, meter = 4] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     return { name, bpm, keySignature, steps, meter };
   }
-  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, publicBaseURL, withHashtags });
+  function toCatalogSong(song) {
+    const lanes = ['D6','B5','G5','E5','C5','A4','F4','D4','C4','E4','G4','B4','D5','F5','A5','C6','E6'];
+    const pitches = [26,23,19,16,12,9,5,2,0,4,7,11,14,17,21,24,28];
+    const title = typeof song?.name === 'string' ? song.name.trim() : '';
+    if (!title || title.length > 40) throw new Error('曲名は1〜40文字にしてください。');
+    if (!Number.isInteger(song.bpm) || song.bpm < 30 || song.bpm > 240) throw new Error('BPMは30〜240の整数にしてください。');
+    const key = song.keySignature ?? 'C';
+    if (!['C','G','D','A','E','B','Fs','Cs','F','Bb','Eb','Ab','Db','Gb','Cb'].includes(key)) throw new Error('対応していない調号です。');
+    const meter = song.meter === undefined ? 4 : song.meter;
+    if (meter !== null && ![2,3,4,5,6].includes(meter)) throw new Error('拍子が正しくありません。');
+    if (!Array.isArray(song.steps) || song.steps.length < 1 || song.steps.length > 2000) throw new Error('音符は1〜2000個にしてください。');
+    const seen = new Set();
+    for (const note of song.steps) {
+      if (!Array.isArray(note) || note.length !== 2 || !Number.isFinite(note[0]) || note[0] < 0 || note[0] > 20000 || !Number.isInteger(note[1]) || note[1] < 0 || note[1] >= lanes.length) throw new Error('音符の位置または音高が正しくありません。');
+      const identity = `${note[0]}:${note[1]}`;
+      if (seen.has(identity)) throw new Error('同じ拍に同じ音が重複しています。');
+      seen.add(identity);
+    }
+    const steps = song.steps.map(note=>[...note]).sort((a,b)=>a[0]-b[0] || pitches[a[1]]-pitches[b[1]]);
+    const source = steps.map(([step,lane])=>`${step / 2},${lanes[lane]}`).join('\n');
+    return {title,bpm:song.bpm,key_signature:key,meter,source};
+  }
+  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, toCatalogSong, publicBaseURL, withHashtags });
 })();
 
 (() => {
@@ -2901,7 +2923,7 @@
           }
         }
         if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
-        const localSongs = makerSongs.filter(s => !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
+        const localSongs = makerSongs.filter(s => !s.id.startsWith('user-catalog-') && !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
         const mergedSongs = [...new Map([...restoredSongs, ...localSongs].map((song) => [song.id, song])).values()];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
@@ -3069,7 +3091,7 @@
         for (const song of stored) {
           if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
           if (removedBundledSongIds.has(song.id)) continue;
-          if (['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id) && !window.OTOIRO_PORTABLE_APP) continue;
+          if ((song.id.startsWith('user-catalog-') || ['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id)) && !window.OTOIRO_PORTABLE_APP) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
             const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);

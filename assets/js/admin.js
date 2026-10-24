@@ -2,6 +2,12 @@
   "use strict";
   const byId = (id) => document.getElementById(id);
   let config, session = null, revision = 0, offset = 0, busy = false;
+  let preparedSong = null;
+  function invalidatePreparedSong() {
+    preparedSong = null;
+    byId('adminSongRegister').disabled = true;
+    byId('adminSongSummary').textContent = '';
+  }
   const status = (message) => { byId("adminStatus").textContent = message; };
   function clearSession() {
     session = null;
@@ -10,11 +16,15 @@
     byId("adminPanel").hidden = true;
     byId("adminLogin").hidden = false;
     byId("adminPassword").value = "";
+    invalidatePreparedSong();
+    byId('adminSongLink').value = '';
   }
   function setBusy(value) {
     busy = value;
     for (const id of ["adminLoginButton", "adminReload", "adminMore", "adminKind"]) byId(id).disabled = value;
     byId("adminItems").querySelectorAll("button, select, textarea").forEach((control) => { control.disabled = value; });
+    byId('adminSongImport').querySelectorAll('button,select,textarea').forEach(control=>{control.disabled=value;});
+    byId('adminSongRegister').disabled = value || !preparedSong;
   }
   async function request(path, options = {}, token = session?.access_token) {
     const response = await fetch(`${config.url}${path}`, {
@@ -24,6 +34,7 @@
     if (!response.ok) {
       if (response.status === 401 && token && session?.access_token === token) { clearSession(); status("ログインの有効期限が切れました。再度ログインしてください。"); throw new Error("ログインの有効期限が切れました。再度ログインしてください。"); }
       if (response.status === 404) throw new Error("管理用データベースの設定が必要です。");
+      if (response.status === 409) throw new Error('同じ曲がすでに登録されています。収録曲の一覧を確認してください。');
       throw new Error("操作できませんでした。アカウントの権限や接続状態を確認してください。");
     }
     return response;
@@ -157,6 +168,38 @@
     clearSession();
     status("ログアウトしました。");
     if (token) request("/auth/v1/logout", { method: "POST" }, token).catch(() => {});
+  });
+  byId('adminSongLink').addEventListener('input',invalidatePreparedSong);
+  byId('adminSongPreview').addEventListener('click',async()=>{
+    if(busy || !session)return;
+    invalidatePreparedSong();
+    const snapshot=byId('adminSongLink').value, ownRevision=revision;
+    setBusy(true);
+    try {
+      const match=/#song=1[bgjz]\.[A-Za-z0-9_-]+/.exec(snapshot);
+      if(!match)throw new Error('おといろの共有リンクを貼り付けてください。');
+      const song=window.OtoiroSharing.toCatalogSong(await window.OtoiroSharing.readLink(match[0]));
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(song)));
+      const id='user-catalog-'+[...new Uint8Array(digest)].map(n=>n.toString(16).padStart(2,'0')).join('').slice(0,32);
+      if(ownRevision!==revision || !session || snapshot!==byId('adminSongLink').value)return;
+      preparedSong={id,...song};
+      const count=song.source.split('\n').length;
+      byId('adminSongSummary').textContent=`${song.title} · BPM ${song.bpm} · 調号 ${song.key_signature} · ${song.meter===null?'拍子なし':song.meter===6?'6/8':song.meter+'/4'} · ${count}音`;
+    }catch(error){if(ownRevision===revision)byId('adminSongSummary').textContent=error.message;}
+    finally{setBusy(false);}
+  });
+  byId('adminSongImport').addEventListener('submit',async event=>{
+    event.preventDefault();if(busy || !session || !preparedSong)return;
+    const song={...preparedSong,is_visible:byId('adminSongVisibility').value==='public'}, ownRevision=revision;
+    if(!confirm(`「${song.title}」を${song.is_visible?'公開':'非公開'}で登録しますか？`))return;
+    setBusy(true);let saved=false;
+    try {
+      const rows=await(await request('/rest/v1/catalog_songs',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(song)})).json();
+      if(!Array.isArray(rows)||rows.length!==1)throw new Error('登録結果を確認できませんでした。');
+      if(ownRevision===revision && session){invalidatePreparedSong();byId('adminSongLink').value='';byId('adminKind').value='catalog_songs';saved=true;}
+    }catch(error){if(ownRevision===revision)status(error.message);}
+    finally{setBusy(false);}
+    if(saved){await loadItems(true);status(`「${song.title}」を${song.is_visible?'公開':'非公開'}で登録しました。ゲームを再読み込みすると反映されます。`);}
   });
   byId("adminReload").addEventListener("click", () => loadItems(true));
   byId('adminBackup').addEventListener('click',async()=>{
