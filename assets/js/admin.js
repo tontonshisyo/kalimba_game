@@ -35,18 +35,13 @@
     return response;
   }
   function parseNotes(input) {
-    const lines = input.split(/
-?
-/);
+    const lines = input.replaceAll(String.fromCharCode(13), "").split(String.fromCharCode(10));
     const notes = [];
     const seen = new Set();
     for (let index = 0; index < lines.length; index++) {
       const line = lines[index].trim();
       if (!line || line.startsWith("#")) continue;
-      const match = /^(d+(?:.d+)?),([A-G][0-9])$/.exec(line);
-      if (!match) throw new Error((index + 1) + "行目の形式を確認してください（例：0,C4）。");
-      const beat = Number(match[1]);
-      const lane = laneByNote.get(match[2]);
+      const parts = line.split(","); if (parts.length !== 2) throw new Error((index + 1) + "行目の形式を確認してください（例：0,C4）。"); const beatText = parts[0].trim(); const noteName = parts[1].trim(); const decimalParts = beatText.split("."); if (!beatText || decimalParts.length > 2 || decimalParts.some((part) => !part || [...part].some((character) => character < "0" || character > "9"))) throw new Error((index + 1) + "行目の拍を確認してください。"); const beat = Number(beatText); const lane = laneByNote.get(noteName);
       if (!Number.isFinite(beat) || beat < 0 || beat > 10000 || lane === undefined) throw new Error((index + 1) + "行目の拍または音名が標準17鍵の範囲外です。");
       const key = beat + ":" + lane;
       if (seen.has(key)) throw new Error((index + 1) + "行目が同じ拍・音名と重複しています。");
