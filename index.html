@@ -126,7 +126,7 @@
             </div>
             <div class="recording-indicator" id="recordingIndicator" hidden></div>
             <div class="recording-countdown" id="recordingCountdown" role="status" aria-live="polite" hidden></div>
-            <div class="free-play-info">
+            <div class="free-play-info" id="freePlayDisplay">
               <strong>フリー演奏</strong>
               <span id="freePlayNote">♪</span>
               <div class="free-record-controls">
@@ -214,6 +214,7 @@
             </div>
             <output id="freeTuningSummary" aria-live="polite"></output>
             <button class="creator-button" id="freeTuningReset" type="button">標準のC調に戻す</button>
+            <button class="creator-button" id="freeDisplayToggle" type="button" aria-pressed="true" aria-controls="freePlayDisplay">中央の表示：ON</button>
           </div>
         </details>
 

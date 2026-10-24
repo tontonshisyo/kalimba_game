@@ -104,6 +104,21 @@
       const arpeggioNoteInterval = .06;
       const maxArpeggioDuration = .3;
       const app = document.querySelector(".app");
+      const freeDisplayToggle = document.getElementById('freeDisplayToggle');
+      let freeDisplayVisible = true;
+      try { freeDisplayVisible = localStorage.getItem('otoiro-free-display') !== 'off'; } catch {}
+      function updateFreeDisplay() {
+        app.classList.toggle('is-free-display-hidden', !freeDisplayVisible);
+        freeDisplayToggle.textContent = `中央の表示：${freeDisplayVisible ? 'ON' : 'OFF'}`;
+        freeDisplayToggle.setAttribute('aria-pressed', String(freeDisplayVisible));
+        document.getElementById('freePlayDisplay').inert = !freeDisplayVisible;
+      }
+      freeDisplayToggle.addEventListener('click', () => {
+        freeDisplayVisible = !freeDisplayVisible;
+        updateFreeDisplay();
+        try { localStorage.setItem('otoiro-free-display',freeDisplayVisible ? 'on' : 'off'); } catch {}
+      });
+      updateFreeDisplay();
       const practiceModeInput = document.getElementById("practiceMode");
       const settingInputs = {
         volume: document.getElementById("volumeSetting"),

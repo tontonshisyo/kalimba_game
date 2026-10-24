@@ -67,6 +67,7 @@
     .app.is-free-play .free-play-exit { display: block; }
     .app.is-free-play .free-play-info { display: flex; position: absolute; inset: 50px 10px 85px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #60452d; text-align: center; pointer-events: none; }
     .free-play-info strong { font-size: 14px; }
+    .app.is-free-play.is-free-display-hidden .free-play-info { display: none; }
     .free-record-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 420px; pointer-events: auto; }
     .free-record-controls output { flex-basis: 100%; font-size: 11px; }
     .free-metronome { display: flex; align-items: center; justify-content: center; gap: 8px; flex-basis: 100%; }

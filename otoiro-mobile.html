@@ -94,6 +94,7 @@
     .app.is-free-play .free-play-exit { display: block; }
     .app.is-free-play .free-play-info { display: flex; position: absolute; inset: 50px 10px 85px; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #60452d; text-align: center; pointer-events: none; }
     .free-play-info strong { font-size: 14px; }
+    .app.is-free-play.is-free-display-hidden .free-play-info { display: none; }
     .free-record-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 420px; pointer-events: auto; }
     .free-record-controls output { flex-basis: 100%; font-size: 11px; }
     .free-metronome { display: flex; align-items: center; justify-content: center; gap: 8px; flex-basis: 100%; }
@@ -851,7 +852,7 @@
             </div>
             <div class="recording-indicator" id="recordingIndicator" hidden></div>
             <div class="recording-countdown" id="recordingCountdown" role="status" aria-live="polite" hidden></div>
-            <div class="free-play-info">
+            <div class="free-play-info" id="freePlayDisplay">
               <strong>フリー演奏</strong>
               <span id="freePlayNote">♪</span>
               <div class="free-record-controls">
@@ -939,6 +940,7 @@
             </div>
             <output id="freeTuningSummary" aria-live="polite"></output>
             <button class="creator-button" id="freeTuningReset" type="button">標準のC調に戻す</button>
+            <button class="creator-button" id="freeDisplayToggle" type="button" aria-pressed="true" aria-controls="freePlayDisplay">中央の表示：ON</button>
           </div>
         </details>
 
@@ -1895,6 +1897,21 @@
       const arpeggioNoteInterval = .06;
       const maxArpeggioDuration = .3;
       const app = document.querySelector(".app");
+      const freeDisplayToggle = document.getElementById('freeDisplayToggle');
+      let freeDisplayVisible = true;
+      try { freeDisplayVisible = localStorage.getItem('otoiro-free-display') !== 'off'; } catch {}
+      function updateFreeDisplay() {
+        app.classList.toggle('is-free-display-hidden', !freeDisplayVisible);
+        freeDisplayToggle.textContent = `中央の表示：${freeDisplayVisible ? 'ON' : 'OFF'}`;
+        freeDisplayToggle.setAttribute('aria-pressed', String(freeDisplayVisible));
+        document.getElementById('freePlayDisplay').inert = !freeDisplayVisible;
+      }
+      freeDisplayToggle.addEventListener('click', () => {
+        freeDisplayVisible = !freeDisplayVisible;
+        updateFreeDisplay();
+        try { localStorage.setItem('otoiro-free-display',freeDisplayVisible ? 'on' : 'off'); } catch {}
+      });
+      updateFreeDisplay();
       const practiceModeInput = document.getElementById("practiceMode");
       const settingInputs = {
         volume: document.getElementById("volumeSetting"),
