@@ -203,7 +203,7 @@
       let runTravelTime = travelTime;
       let runTempoScale = 1;
       let activeNotes = [];
-      let activeBarLines = [];
+      let activeTimingLines = [];
       let freeNotes = [];
       let freeRecording = [];
       let freeRecordStartedAt = null;
@@ -1828,17 +1828,19 @@
         if (state !== "free") {
           const elapsed = (renderTime - startedAt) / 1000;
           ctx.save();
-          for (const bar of activeBarLines) {
-            if (elapsed < bar.time - runTravelTime || elapsed > bar.time + .08) continue;
-            const depth = Math.min(1, Math.max(0, (elapsed - (bar.time - runTravelTime)) / runTravelTime));
+          for (const line of activeTimingLines) {
+            if (elapsed < line.time - runTravelTime || elapsed > line.time + .08) continue;
+            const depth = Math.min(1, Math.max(0, (elapsed - (line.time - runTravelTime)) / runTravelTime));
             const left = geometry.laneBounds(0, 1 - depth).left;
             const right = geometry.laneBounds(laneCount - 1, 1 - depth).right;
             const y = geometry.lanePoint(0, depth).y;
             ctx.beginPath();
             ctx.moveTo(left, y);
             ctx.lineTo(right, y);
-            ctx.strokeStyle = `rgba(255, 239, 210, ${.1 + depth * .12})`;
-            ctx.lineWidth = 1 + depth * .6;
+            ctx.strokeStyle = line.isBar
+              ? `rgba(255, 239, 210, ${.1 + depth * .12})`
+              : `rgba(255, 239, 210, ${.025 + depth * .045})`;
+            ctx.lineWidth = line.isBar ? 1 + depth * .6 : .6 + depth * .25;
             ctx.stroke();
           }
           ctx.restore();
@@ -2258,18 +2260,17 @@
         return result;
       }
 
-      function createActiveBarLines(selectedChart, startBeat) {
+      function createActiveTimingLines(selectedChart, startBeat) {
         const meter = Number(selectedChart.meter);
         const beatsPerBar = meter === 6 ? 3 : [2, 3, 4, 5].includes(meter) ? meter : null;
-        if (!beatsPerBar) return [];
         const lastStep = Math.max(...selectedChart.steps.filter(([step]) => step >= startBeat * 2).map(([step]) => step));
         if (!Number.isFinite(lastStep)) return [];
         const lastBeat = lastStep / 2;
-        const firstBar = Math.ceil(startBeat / beatsPerBar) * beatsPerBar;
         const lines = [];
-        for (let beat = firstBar; beat <= lastBeat; beat += beatsPerBar) {
+        for (let beat = Math.ceil(startBeat); beat <= lastBeat; beat++) {
           lines.push({
             beat,
+            isBar: Boolean(beatsPerBar && beat % beatsPerBar === 0),
             time: runTravelTime + (beat - startBeat) * (60 / selectedChart.bpm) * runTempoScale
           });
         }
@@ -2383,7 +2384,7 @@
         cancelSheetGesture();
         clearPointerInteraction();
         activeNotes = [];
-        activeBarLines = [];
+        activeTimingLines = [];
         freeNotes = [];
         effects = [];
         practiceHoldAt = null;
@@ -2445,7 +2446,7 @@
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
         activeNotes = createActiveNotes(chart, startBeat);
-        activeBarLines = createActiveBarLines(chart, startBeat);
+        activeTimingLines = createActiveTimingLines(chart, startBeat);
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -2491,7 +2492,7 @@
         isTestPlay = true;
         selectionControls.forEach((control) => { control.disabled = true; });
         activeNotes = createActiveNotes(chart, startBeat);
-        activeBarLines = createActiveBarLines(chart, startBeat);
+        activeTimingLines = createActiveTimingLines(chart, startBeat);
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
         perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
