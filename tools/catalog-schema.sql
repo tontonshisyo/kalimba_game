@@ -1,0 +1,11 @@
+create table if not exists public.catalog_songs(id text primary key,title text not null,bpm integer not null check(bpm between 30 and 240),source text not null,key_signature text not null default 'C',meter integer,is_visible boolean not null default false,created_at timestamptz not null default now());
+alter table public.catalog_songs enable row level security;
+revoke all on public.catalog_songs from public,anon,authenticated;
+grant select on public.catalog_songs to anon,authenticated;
+grant update(is_visible) on public.catalog_songs to authenticated;
+drop policy if exists catalog_public_read on public.catalog_songs;
+create policy catalog_public_read on public.catalog_songs for select to anon,authenticated using(is_visible);
+drop policy if exists catalog_admin_read on public.catalog_songs;
+create policy catalog_admin_read on public.catalog_songs for select to authenticated using(exists(select 1 from public.otoiro_admins where user_id=(select auth.uid())));
+drop policy if exists catalog_admin_update on public.catalog_songs;
+create policy catalog_admin_update on public.catalog_songs for update to authenticated using(exists(select 1 from public.otoiro_admins where user_id=(select auth.uid()))) with check(exists(select 1 from public.otoiro_admins where user_id=(select auth.uid())));

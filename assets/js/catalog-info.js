@@ -1,0 +1,4 @@
+(() => {
+ 'use strict';
+ (async()=>{try{const config=await(await fetch('assets/data/community-config.json',{cache:'no-store'})).json();const result=await fetch(`${config.url}/rest/v1/catalog_songs?select=title&order=created_at.asc`,{headers:{apikey:config.publishableKey},cache:'no-store',signal:AbortSignal.timeout(8000)});if(!result.ok)return;const rows=await result.json();if(!Array.isArray(rows))return;const list=document.querySelector('.about-songs');if(!list)return;const credits={'きらきら星':'フランス伝承曲','メリーさんの羊':'アメリカの童謡','かえるのうた':'ドイツ伝承曲','大きな古時計':'H. C. ワーク','カノン':'ヨハン・パッヘルベル','エーデルワイス':'リチャード・ロジャース、オスカー・ハマースタイン2世'};list.replaceChildren(...rows.map(row=>{const item=document.createElement('li');item.textContent=row.title+(credits[row.title]?'／'+credits[row.title]:'');return item;}));}catch{}})();
+})();

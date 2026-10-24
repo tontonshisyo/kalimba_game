@@ -89,6 +89,7 @@
       const recordingIndicator = document.getElementById("recordingIndicator");
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
+      let catalogVisibleIds = null;
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -693,7 +694,9 @@
             document.getElementById("recordingCountdown").textContent = String(4 - beatIndex);
             scheduleRecordingBeat(beatIndex + 1, deadline + recordingBeatDuration);
           } else {
-            recordingStartedAt = performance.now();
+            if (!Number.isFinite(recordingStartedAt)) recordingStartedAt = performance.now();
+            playMetronome(false);
+            scheduleRecordingBeat(beatIndex + 1, Math.max(performance.now() + 20, deadline + recordingBeatDuration));
             document.getElementById("recordingCountdown").hidden = true;
             recordingIndicator.textContent = "録音中 · 終わったら「録音を止める」を押してください";
           }
@@ -876,6 +879,10 @@
           songNames[song.id] = validated.name;
         }
         refreshSongOptions(songSelect.value);
+        if (catalogVisibleIds) {
+          for (const id of Object.keys(builtInSongNames)) if (!catalogVisibleIds.has(id)) { delete charts[id]; delete songNames[id]; }
+          refreshSongOptions(songSelect.value);
+        }
         deleteChartButton.hidden = !songSelect.value.startsWith("user-");
       }
 
@@ -1063,7 +1070,15 @@
           if (window.location.protocol === "file:") throw new Error("ファイルから直接開いています。");
           const response = await fetch("./assets/data/custom-charts.json", { cache: "no-store" });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const pack = await response.json();
+          let pack = await response.json();
+          try {
+            const config = await (await fetch('./assets/data/community-config.json', {cache:'no-store'})).json();
+            const catalog = await fetch(`${config.url}/rest/v1/catalog_songs?select=id,title,bpm,source,key_signature,meter&order=created_at.asc`, {headers:{apikey:config.publishableKey},cache:'no-store',signal:AbortSignal.timeout(8000)});
+            if (!catalog.ok) throw new Error('catalog unavailable');
+            const rows = await catalog.json();
+            catalogVisibleIds = new Set(rows.map(s=>s.id));
+            pack = {format:'otoiro-chart-pack',version:1,updatedAt:new Date().toISOString(),songs:rows.map(s=>({id:s.id,name:s.title,bpm:s.bpm,source:s.source,keySignature:s.key_signature,meter:s.meter}))};
+          } catch (error) { console.warn('収録曲は保存済みの一覧を使用します。',error); }
           restoredSongs = validateChartPack(pack, true);
           authoritative = typeof pack.updatedAt === "string";
         } catch (fetchError) {
@@ -1078,7 +1093,8 @@
           }
         }
         if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
-        const mergedSongs = [...new Map([...restoredSongs, ...makerSongs].map((song) => [song.id, song])).values()];
+        const localSongs = makerSongs.filter(s => !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
+        const mergedSongs = [...new Map([...restoredSongs, ...localSongs].map((song) => [song.id, song])).values()];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
       }
@@ -1139,8 +1155,9 @@
           portableDocument.querySelector("#connectProjectButton")?.remove();
           portableDocument.querySelector("#exportMobileAppButton")?.remove();
           portableDocument.querySelector(".project-folder-help")?.remove();
-          portableDocument.querySelector(".beta-feedback")?.remove();
+          portableDocument.querySelectorAll(".beta-feedback").forEach(node=>node.remove());
           portableDocument.querySelector('script[src="assets/js/feedback.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/diagnostics.js"]')?.remove();
           const portableStyle = document.createElement("style");
           portableStyle.textContent = styleText.replace(/<\/style/gi, "<\\/style");
           portableDocument.querySelector("head").append(portableStyle);
@@ -1218,7 +1235,8 @@
           option.textContent = name;
           songSelect.append(option);
         }
-        songSelect.value = songNames[selectedId] ? selectedId : "twinkle";
+        songSelect.value = songNames[selectedId] ? selectedId : Object.keys(songNames)[0] || '';
+        document.getElementById('startButton').disabled = !songSelect.value;
         chart = charts[songSelect.value];
         updateReadyBpm();
         songLibrary?.refresh();
@@ -1243,6 +1261,7 @@
         for (const song of stored) {
           if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
           if (removedBundledSongIds.has(song.id)) continue;
+          if (['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id) && !window.OTOIRO_PORTABLE_APP) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
             const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);
@@ -1379,7 +1398,7 @@
 
       function updateReadyBpm() {
         const tempoScale = practiceModeInput.checked ? 100 / settings.practiceTempo : 1;
-        document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / tempoScale)}`;
+        document.getElementById("bpmValue").textContent = chart ? `BPM ${Math.round(chart.bpm / tempoScale)}` : '公開中の曲がありません';
       }
 
       notes.forEach((note, index) => {
@@ -2305,7 +2324,7 @@
       });
 
       function startGame(orientationAccepted = false) {
-        if (state === "free" || isRecording) return;
+        if (state === "free" || isRecording || !songSelect.value) return;
         if (state === "playing") return;
         if (orientationAccepted !== true && requestOrientation(() => startGame(true))) return;
         if (state === "paused") {
@@ -2631,8 +2650,8 @@
       initialProjectRestore.catch(() => {}).then(loadSharedSong);
       window.addEventListener("hashchange", loadSharedSong);
       function openFeedbackFromLink() {
-        if (location.hash !== "#feedback") return;
-        const feedback = document.getElementById("feedback");
+        if (!["#feedback", "#contact"].includes(location.hash)) return;
+        const feedback = document.getElementById(location.hash.slice(1));
         if (!feedback) return;
         feedback.open = true;
         feedback.scrollIntoView({ block: "start" });

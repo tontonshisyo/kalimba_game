@@ -62,7 +62,12 @@
   }
   document.getElementById("feedbackReload").addEventListener("click", () => loadFeedback(true));
   more.addEventListener("click", () => loadFeedback(false));
-  document.querySelector(".beta-feedback").addEventListener("toggle", (event) => { if (event.target.open) loadFeedback(true); });
+  document.getElementById('feedback').addEventListener("toggle", (event) => { if (event.target.open) loadFeedback(true); });
+  document.getElementById('privateContactForm').addEventListener('submit', async event => {
+    event.preventDefault(); const form=event.currentTarget, field=document.getElementById('privateContactMessage'), message=field.value.trim(), status=document.getElementById('privateContactStatus'), button=form.querySelector('button');
+    if(!message || message.length>2000)return;button.disabled=true;status.textContent='送信しています…';
+    try { const config=await getConfig();const response=await fetch(`${config.url}/rest/v1/beta_feedback`,{method:'POST',headers:{apikey:config.publishableKey,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({category:'other',message,is_public:false}),signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('送信できませんでした。時間をおいてお試しください。');if(field.value.trim()===message)field.value='';status.textContent='管理者に送信しました。一般には公開されません。'; }catch(error){status.textContent='送信できませんでした。入力内容は残しています。';}finally{button.disabled=false;}
+  });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (busy) return;
@@ -91,4 +96,3 @@
     } finally { busy = false; button.disabled = false; }
   });
 })();
-

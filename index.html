@@ -10,11 +10,23 @@
   <meta name="description" content="曲に合わせて練習できる17鍵カリンバ。フリー演奏・録音・曲の作成とファイル共有に対応。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icons/kalimba.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/icons/kalimba.svg">
+  <link rel="apple-touch-icon" href="assets/icons/app-180.png">
   <link rel="stylesheet" href="assets/css/style.css">
   <title>おといろ — 17鍵カリンバ</title>
+  <script src="assets/js/diagnostics.js"></script>
+  <link rel="canonical" href="https://otoiro.pages.dev/">
+  <meta property="og:title" content="おといろ — 17鍵カリンバ">
+  <meta property="og:description" content="ブラウザーでカリンバを演奏。曲の練習、フリー演奏、録音を楽しめます。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://otoiro.pages.dev/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:image" content="https://otoiro.pages.dev/assets/icons/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="木のカリンバと草花を描いた、おといろのイラスト">
 </head>
 <body>
+  <p style="text-align:center"><a href="policy.html">利用ルールとプライバシー</a></p>
   <div class="app">
     <section class="result-panel" id="resultPanel" aria-labelledby="resultTitle" tabindex="-1" hidden>
       <div class="result-heading"><div><p class="eyebrow">RESULT</p><h2 id="resultTitle">演奏結果</h2><p id="resultSong"></p></div><div class="result-score"><span>スコア</span><strong id="resultScore">0</strong><small>pt</small></div></div>
@@ -206,6 +218,10 @@
           </div>
         </details>
 
+        <details class="beta-feedback" id="contact">
+          <summary>非公開のお問い合わせ</summary>
+          <form id="privateContactForm"><p>内容は管理者だけが確認します。返信が必要な場合は本文に連絡先を書いてください。パスワードなどは送らないでください。</p><label>内容<textarea id="privateContactMessage" maxlength="2000" required rows="5"></textarea></label><button type="submit" class="creator-button">管理者に送信</button><p id="privateContactStatus" role="status"></p></form>
+        </details>
         <details class="beta-feedback" id="feedback">
           <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></svg>意見・不具合の報告 · β</summary>
           <form id="betaFeedbackForm">
@@ -302,7 +318,7 @@
             <p class="chart-help portable-export-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
             <section class="recording-panel" aria-label="鍵盤入力で譜面を録音">
               <h3>鍵盤で録音</h3>
-              <p>横画面で準備し、「録音開始」を押すと4・3・2・1のカウントダウン後に録音します。演奏中はメトロノームを鳴らしません。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
+              <p>横画面で準備し、「録音開始」を押すと4・3・2・1の後に録音します。メトロノームは録音終了まで同じ強さで毎拍鳴ります。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
               <label for="quantizeSetting">クオンタイズ
                 <select id="quantizeSetting">
                   <option value="1">4分音符</option>

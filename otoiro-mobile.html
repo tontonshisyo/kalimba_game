@@ -13,6 +13,17 @@
 
 
 <title>おといろ — 17鍵カリンバ</title>
+  
+  <link rel="canonical" href="https://otoiro.pages.dev/">
+  <meta property="og:title" content="おといろ — 17鍵カリンバ">
+  <meta property="og:description" content="ブラウザーでカリンバを演奏。曲の練習、フリー演奏、録音を楽しめます。">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://otoiro.pages.dev/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:image" content="https://otoiro.pages.dev/assets/icons/social-card.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="木のカリンバと草花を描いた、おといろのイラスト">
 <style>
     :root {
       color-scheme: light;
@@ -740,6 +751,7 @@
 </style>
 </head>
 <body>
+  <p style="text-align:center"><a href="policy.html">利用ルールとプライバシー</a></p>
   <div class="app">
     <section class="result-panel" id="resultPanel" aria-labelledby="resultTitle" tabindex="-1" hidden>
       <div class="result-heading"><div><p class="eyebrow">RESULT</p><h2 id="resultTitle">演奏結果</h2><p id="resultSong"></p></div><div class="result-score"><span>スコア</span><strong id="resultScore">0</strong><small>pt</small></div></div>
@@ -931,25 +943,8 @@
           </div>
         </details>
 
-        <details class="beta-feedback" id="feedback">
-          <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></svg>意見・不具合の報告 · β</summary>
-          <form id="betaFeedbackForm">
-            <p>感想、ほしい機能、不具合などを教えてください。送った内容と管理者の返信・対応状況は、みんなに公開されます。名前・メールアドレスは不要です。</p>
-            <label for="feedbackCategory">種類<select id="feedbackCategory"><option value="idea">感想・アイデア</option><option value="bug">不具合の報告</option><option value="other">その他</option></select></label>
-            <label for="feedbackMessage">内容<textarea id="feedbackMessage" maxlength="2000" rows="5" placeholder="例：スマホで和音を弾くときに…" required></textarea></label>
-            <small>2000文字まで。個人情報は書かないでください。</small>
-            <label class="feedback-consent"><input id="feedbackPublicConsent" type="checkbox" required>内容が公開されることを確認しました</label>
-            <button class="creator-button creator-button-primary" id="feedbackSend" type="submit">公開して送る</button>
-            <p id="feedbackStatus" role="status" aria-live="polite"></p>
-          </form>
-          <section class="feedback-board" aria-label="みんなの意見と対応状況">
-            <h3>みんなの意見・対応状況</h3>
-            <button class="creator-button" id="feedbackReload" type="button">一覧を更新</button>
-            <div id="feedbackList"></div>
-            <button class="creator-button" id="feedbackMore" type="button" hidden>さらに読み込む</button>
-            <p id="feedbackListStatus" role="status" aria-live="polite"></p>
-          </section>
-        </details>
+        
+        
         <details class="creator-mode">
           <summary><svg class="section-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 11-11 4 4L9 19l-5 1 1-5ZM14 6l4 4M4 4h6M4 8h3"/></svg>曲の作成・共有</summary>
           <div class="creator-content">
@@ -1025,7 +1020,7 @@
             <p class="chart-help portable-export-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
             <section class="recording-panel" aria-label="鍵盤入力で譜面を録音">
               <h3>鍵盤で録音</h3>
-              <p>横画面で準備し、「録音開始」を押すと4・3・2・1のカウントダウン後に録音します。演奏中はメトロノームを鳴らしません。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
+              <p>横画面で準備し、「録音開始」を押すと4・3・2・1の後に録音します。メトロノームは録音終了まで同じ強さで毎拍鳴ります。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
               <label for="quantizeSetting">クオンタイズ
                 <select id="quantizeSetting">
                   <option value="1">4分音符</option>
@@ -1100,7 +1095,7 @@
   </dialog>
   
   
-  <script>window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS={"songs":[{"id":"user-1792657188767-06mqg","name":"かえるのうた","bpm":98,"source":"0,C4\n1,D4\n2,E4\n3,F4\n4,E4\n5,D4\n6,C4\n8,C4\n8,E4\n9,D4\n9,F4\n10,E4\n10,G4\n11,F4\n11,A4\n12,E4\n12,G4\n13,D4\n13,F4\n14,C4\n14,E4\n16,C4\n16,E4\n17,F4\n18,C4\n18,G4\n19,A4\n20,C4\n20,G4\n21,F4\n22,C4\n22,E4\n24,C4\n24.5,C4\n25,D4\n25.5,D4\n26,C4\n26,E4\n26.5,E4\n27,F4\n27.5,F4\n28,C4\n28,E4\n29,D4\n30,C4\n32,C4\n32.5,C4\n33,D4\n33.5,D4\n34,E4\n34.5,E4\n35,F4\n35.5,F4\n36,E4\n37,D4\n38,C4"},{"id":"user-20261024-edelweiss-share","name":"エーデルワイス","bpm":96,"meter":3,"keySignature":"C","source":"0,C4\n0,E4\n2,G4\n3,F4\n3,D5\n6,E4\n6,C5\n8,G4\n9,D4\n9,F4\n12,C4\n12,E4\n14,E4\n15,E4\n16,F4\n17,G4\n18,C4\n18,F4\n18,A4\n21,D4\n21,G4\n24,C4\n24,E4\n26,G4\n27,F4\n27,D5\n30,E4\n30,C5\n32,G4\n33,D4\n33,F4\n36,C4\n36,E4\n38,G4\n39,D4\n39,G4\n40,A4\n41,B4\n42,C4\n42,E4\n42,G4\n42,C5\n45,E4\n45,G4\n45,C5\n48,G4\n48,B4\n48,D5\n49.5,G4\n50,G4\n51,F4\n51,B4\n52,A4\n53,G4\n54,C4\n54,E4\n56,G4\n57,E4\n57,C5\n60,F4\n60,A4\n62,C5\n63,D4\n63,D5\n65,A4\n65,C5\n66,G4\n66,B4\n69,F4\n69,G4\n72,C4\n72,E4\n74,G4\n75,F4\n75,D5\n78,E4\n78,C5\n80,G4\n81,D4\n81,F4\n84,C4\n84,E4\n86,G4\n87,D4\n87,G4\n88,A4\n89,B4\n90,C4\n90,E4\n90,G4\n90,C5\n93,C4\n93,E4\n93,G4\n93,C5"},{"id":"user-20261024-canon-share","name":"カノン","bpm":74,"keySignature":"C","source":"0,C4\n0,E4\n0,G4\n0,E5\n2,G4\n2,B4\n2,D5\n4,A4\n4,C5\n6,E4\n6,G4\n6,B4\n8,F4\n8,A4\n10,C4\n10,E4\n10,G4\n12,F4\n12,A4\n14,G4\n14,B4\n16,C4\n16,E4\n16,G4\n16,G5\n16.5,E5\n16.75,F5\n17,G5\n17.5,E5\n17.75,F5\n18,G5\n18.25,G4\n18.5,A4\n18.75,B4\n19,C5\n19.25,D5\n19.5,E5\n19.75,F5\n20,A4\n20,C5\n20,E5\n20.5,C5\n20.75,D5\n21,E5\n21.5,E4\n21.75,F4\n22,G4\n22.25,A4\n22.5,G4\n22.75,F4\n23,G4\n23.25,E4\n23.5,F4\n23.75,G4\n24,C4\n24,F4\n24.5,A4\n24.75,G4\n25,F4\n25.5,E4\n25.75,D4\n26,E4\n26.25,D4\n26.5,C4\n26.75,D4\n27,E4\n27.25,F4\n27.5,G4\n27.75,A4\n28,C4\n28,F4\n28.5,A4\n28.75,G4\n29,F4\n29,A4\n29.5,B4\n29.75,C5\n30,D4\n30,G4\n30.25,A4\n30.5,B4\n30.75,C5\n31,D5\n31.25,E5\n31.5,F5\n31.75,G5\n32,C4\n32,E4\n32,G4\n32,G5\n32.5,E5\n32.75,F5\n33,G5\n33.5,E5\n33.75,F5\n34,G4\n34,G5\n34.25,G4\n34.5,A4\n34.75,B4\n35,C5\n35.25,D5\n35.5,E5\n35.75,F5\n36,A4\n36,C5\n36,E5\n36.5,C5\n36.75,D5\n37,E5\n37.5,E4\n37.75,F4\n38,G4\n38.25,A4\n38.5,G4\n38.75,F4\n39,G4\n39.25,C5\n39.5,B4\n39.75,C5\n40,F4\n40,A4\n40.5,C5\n40.75,B4\n41,A4\n41.5,G4\n41.75,F4\n42,C4\n42,E4\n42,G4\n42.25,F4\n42.5,E4\n42.75,F4\n43,G4\n43.25,C5\n43.5,B4\n43.75,C5\n44,F4\n44,A4\n44.5,C5\n44.75,B4\n45,C5\n45.5,B4\n45.75,A4\n46,B4\n46.25,C5\n46.5,D5\n46.75,C5\n47,D5\n47.25,E5\n47.5,A4\n47.75,B4\n48,C4\n48,E4\n48,G4\n48,C5"},{"id":"user-1792658715575-ygkqm","name":"大きな古時計","bpm":90,"source":"3,G4\n4,C4\n4,E4\n4,G4\n4,C5\n5,B4\n5.5,C5\n6,F4\n6,A4\n6,D5\n7,C5\n7.5,D5\n8,E4\n8,G4\n8,C5\n8,E5\n8.5,E5\n9,F5\n9.5,E5\n10,F4\n10,A4\n11,D5\n11.5,D5\n12,G4\n12,C5\n13,C5\n13.5,C5\n14,F4\n14,B4\n15,A4\n15.5,B4\n16,E4\n16,G4\n16,C5\n19,G4\n20,C4\n20,E4\n20,G4\n20,C5\n21,B4\n21.5,C5\n22,F4\n22,A4\n22,D5\n23,C5\n23.5,D5\n24,E4\n24,G4\n24,C5\n24,E5\n24.5,E5\n25,F5\n25.5,E5\n26,F4\n26,A4\n27,D5\n27.5,D5\n28,E4\n28,C5\n29,C5\n29.5,C5\n30,F4\n30,G4\n30,B4\n31,A4\n31.5,B4\n32,E4\n32,G4\n32,C5\n35,C5\n35.5,E5\n36,C4\n36,E4\n36,G4\n36,G5\n37,E5\n37.5,D5\n38,A4\n38,C5\n39,B4\n39.5,C5\n40,F4\n40,D5\n40.5,C5\n41,B4\n41.5,A4\n42,G4\n43,C5\n43.5,E5\n44,A4\n44,C5\n44,E5\n44,G5\n45,E5\n45.5,D5\n46,A4\n46,C5\n47,B4\n47.5,C5\n48,G4\n48,B4\n48,D5\n50.5,G4\n51,G4\n51.5,G4\n52,C4\n52,E4\n52,G4\n52,C5\n52.5,C5\n54,G4\n54,B4\n54,D5\n56,G4\n56,C5\n56,E5\n56.5,E5\n57,F5\n57.5,E5\n58,F4\n58,A4\n59,D5\n59.5,D5\n60,E4\n60,G4\n60,C5\n61,C5\n61.5,C5\n62,F4\n62,G4\n62,B4\n63,A4\n63.5,B4\n64,C4\n64,E4\n64,G4\n64,C5"}]};
+  <script>window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS={"songs":[{"id":"user-1792657188767-06mqg","name":"かえるのうた","bpm":98,"source":"0,C4\n1,D4\n2,E4\n3,F4\n4,E4\n5,D4\n6,C4\n8,C4\n8,E4\n9,D4\n9,F4\n10,E4\n10,G4\n11,F4\n11,A4\n12,E4\n12,G4\n13,D4\n13,F4\n14,C4\n14,E4\n16,C4\n16,E4\n17,F4\n18,C4\n18,G4\n19,A4\n20,C4\n20,G4\n21,F4\n22,C4\n22,E4\n24,C4\n24.5,C4\n25,D4\n25.5,D4\n26,C4\n26,E4\n26.5,E4\n27,F4\n27.5,F4\n28,C4\n28,E4\n29,D4\n30,C4\n32,C4\n32.5,C4\n33,D4\n33.5,D4\n34,E4\n34.5,E4\n35,F4\n35.5,F4\n36,E4\n37,D4\n38,C4"},{"id":"user-20261024-canon-share","name":"カノン","bpm":74,"keySignature":"C","source":"0,C4\n0,E4\n0,G4\n0,E5\n2,G4\n2,B4\n2,D5\n4,A4\n4,C5\n6,E4\n6,G4\n6,B4\n8,F4\n8,A4\n10,C4\n10,E4\n10,G4\n12,F4\n12,A4\n14,G4\n14,B4\n16,C4\n16,E4\n16,G4\n16,G5\n16.5,E5\n16.75,F5\n17,G5\n17.5,E5\n17.75,F5\n18,G5\n18.25,G4\n18.5,A4\n18.75,B4\n19,C5\n19.25,D5\n19.5,E5\n19.75,F5\n20,A4\n20,C5\n20,E5\n20.5,C5\n20.75,D5\n21,E5\n21.5,E4\n21.75,F4\n22,G4\n22.25,A4\n22.5,G4\n22.75,F4\n23,G4\n23.25,E4\n23.5,F4\n23.75,G4\n24,C4\n24,F4\n24.5,A4\n24.75,G4\n25,F4\n25.5,E4\n25.75,D4\n26,E4\n26.25,D4\n26.5,C4\n26.75,D4\n27,E4\n27.25,F4\n27.5,G4\n27.75,A4\n28,C4\n28,F4\n28.5,A4\n28.75,G4\n29,F4\n29,A4\n29.5,B4\n29.75,C5\n30,D4\n30,G4\n30.25,A4\n30.5,B4\n30.75,C5\n31,D5\n31.25,E5\n31.5,F5\n31.75,G5\n32,C4\n32,E4\n32,G4\n32,G5\n32.5,E5\n32.75,F5\n33,G5\n33.5,E5\n33.75,F5\n34,G4\n34,G5\n34.25,G4\n34.5,A4\n34.75,B4\n35,C5\n35.25,D5\n35.5,E5\n35.75,F5\n36,A4\n36,C5\n36,E5\n36.5,C5\n36.75,D5\n37,E5\n37.5,E4\n37.75,F4\n38,G4\n38.25,A4\n38.5,G4\n38.75,F4\n39,G4\n39.25,C5\n39.5,B4\n39.75,C5\n40,F4\n40,A4\n40.5,C5\n40.75,B4\n41,A4\n41.5,G4\n41.75,F4\n42,C4\n42,E4\n42,G4\n42.25,F4\n42.5,E4\n42.75,F4\n43,G4\n43.25,C5\n43.5,B4\n43.75,C5\n44,F4\n44,A4\n44.5,C5\n44.75,B4\n45,C5\n45.5,B4\n45.75,A4\n46,B4\n46.25,C5\n46.5,D5\n46.75,C5\n47,D5\n47.25,E5\n47.5,A4\n47.75,B4\n48,C4\n48,E4\n48,G4\n48,C5"},{"id":"user-1792658715575-ygkqm","name":"大きな古時計","bpm":90,"source":"3,G4\n4,C4\n4,E4\n4,G4\n4,C5\n5,B4\n5.5,C5\n6,F4\n6,A4\n6,D5\n7,C5\n7.5,D5\n8,E4\n8,G4\n8,C5\n8,E5\n8.5,E5\n9,F5\n9.5,E5\n10,F4\n10,A4\n11,D5\n11.5,D5\n12,G4\n12,C5\n13,C5\n13.5,C5\n14,F4\n14,B4\n15,A4\n15.5,B4\n16,E4\n16,G4\n16,C5\n19,G4\n20,C4\n20,E4\n20,G4\n20,C5\n21,B4\n21.5,C5\n22,F4\n22,A4\n22,D5\n23,C5\n23.5,D5\n24,E4\n24,G4\n24,C5\n24,E5\n24.5,E5\n25,F5\n25.5,E5\n26,F4\n26,A4\n27,D5\n27.5,D5\n28,E4\n28,C5\n29,C5\n29.5,C5\n30,F4\n30,G4\n30,B4\n31,A4\n31.5,B4\n32,E4\n32,G4\n32,C5\n35,C5\n35.5,E5\n36,C4\n36,E4\n36,G4\n36,G5\n37,E5\n37.5,D5\n38,A4\n38,C5\n39,B4\n39.5,C5\n40,F4\n40,D5\n40.5,C5\n41,B4\n41.5,A4\n42,G4\n43,C5\n43.5,E5\n44,A4\n44,C5\n44,E5\n44,G5\n45,E5\n45.5,D5\n46,A4\n46,C5\n47,B4\n47.5,C5\n48,G4\n48,B4\n48,D5\n50.5,G4\n51,G4\n51.5,G4\n52,C4\n52,E4\n52,G4\n52,C5\n52.5,C5\n54,G4\n54,B4\n54,D5\n56,G4\n56,C5\n56,E5\n56.5,E5\n57,F5\n57.5,E5\n58,F4\n58,A4\n59,D5\n59.5,D5\n60,E4\n60,G4\n60,C5\n61,C5\n61.5,C5\n62,F4\n62,G4\n62,B4\n63,A4\n63.5,B4\n64,C4\n64,E4\n64,G4\n64,C5"}]};
 (() => {
   "use strict";
   const limit = 2 * 1024 * 1024;
@@ -1886,6 +1881,7 @@
       const recordingIndicator = document.getElementById("recordingIndicator");
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
+      let catalogVisibleIds = null;
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -2490,7 +2486,9 @@
             document.getElementById("recordingCountdown").textContent = String(4 - beatIndex);
             scheduleRecordingBeat(beatIndex + 1, deadline + recordingBeatDuration);
           } else {
-            recordingStartedAt = performance.now();
+            if (!Number.isFinite(recordingStartedAt)) recordingStartedAt = performance.now();
+            playMetronome(false);
+            scheduleRecordingBeat(beatIndex + 1, Math.max(performance.now() + 20, deadline + recordingBeatDuration));
             document.getElementById("recordingCountdown").hidden = true;
             recordingIndicator.textContent = "録音中 · 終わったら「録音を止める」を押してください";
           }
@@ -2673,6 +2671,10 @@
           songNames[song.id] = validated.name;
         }
         refreshSongOptions(songSelect.value);
+        if (catalogVisibleIds) {
+          for (const id of Object.keys(builtInSongNames)) if (!catalogVisibleIds.has(id)) { delete charts[id]; delete songNames[id]; }
+          refreshSongOptions(songSelect.value);
+        }
         deleteChartButton.hidden = !songSelect.value.startsWith("user-");
       }
 
@@ -2860,7 +2862,15 @@
           if (window.location.protocol === "file:") throw new Error("ファイルから直接開いています。");
           const response = await fetch("./assets/data/custom-charts.json", { cache: "no-store" });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const pack = await response.json();
+          let pack = await response.json();
+          try {
+            const config = await (await fetch('./assets/data/community-config.json', {cache:'no-store'})).json();
+            const catalog = await fetch(`${config.url}/rest/v1/catalog_songs?select=id,title,bpm,source,key_signature,meter&order=created_at.asc`, {headers:{apikey:config.publishableKey},cache:'no-store',signal:AbortSignal.timeout(8000)});
+            if (!catalog.ok) throw new Error('catalog unavailable');
+            const rows = await catalog.json();
+            catalogVisibleIds = new Set(rows.map(s=>s.id));
+            pack = {format:'otoiro-chart-pack',version:1,updatedAt:new Date().toISOString(),songs:rows.map(s=>({id:s.id,name:s.title,bpm:s.bpm,source:s.source,keySignature:s.key_signature,meter:s.meter}))};
+          } catch (error) { console.warn('収録曲は保存済みの一覧を使用します。',error); }
           restoredSongs = validateChartPack(pack, true);
           authoritative = typeof pack.updatedAt === "string";
         } catch (fetchError) {
@@ -2875,7 +2885,8 @@
           }
         }
         if (!restoredSongs || (!authoritative && !restoredSongs.length)) return;
-        const mergedSongs = [...new Map([...restoredSongs, ...makerSongs].map((song) => [song.id, song])).values()];
+        const localSongs = makerSongs.filter(s => !['twinkle','maryHadALittleLamb','user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(s.id));
+        const mergedSongs = [...new Map([...restoredSongs, ...localSongs].map((song) => [song.id, song])).values()];
         if (!persistMakerSongs(mergedSongs)) return;
         applyMakerSongs(mergedSongs);
       }
@@ -2936,8 +2947,9 @@
           portableDocument.querySelector("#connectProjectButton")?.remove();
           portableDocument.querySelector("#exportMobileAppButton")?.remove();
           portableDocument.querySelector(".project-folder-help")?.remove();
-          portableDocument.querySelector(".beta-feedback")?.remove();
+          portableDocument.querySelectorAll(".beta-feedback").forEach(node=>node.remove());
           portableDocument.querySelector('script[src="assets/js/feedback.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/diagnostics.js"]')?.remove();
           const portableStyle = document.createElement("style");
           portableStyle.textContent = styleText.replace(/<\/style/gi, "<\\/style");
           portableDocument.querySelector("head").append(portableStyle);
@@ -3015,7 +3027,8 @@
           option.textContent = name;
           songSelect.append(option);
         }
-        songSelect.value = songNames[selectedId] ? selectedId : "twinkle";
+        songSelect.value = songNames[selectedId] ? selectedId : Object.keys(songNames)[0] || '';
+        document.getElementById('startButton').disabled = !songSelect.value;
         chart = charts[songSelect.value];
         updateReadyBpm();
         songLibrary?.refresh();
@@ -3040,6 +3053,7 @@
         for (const song of stored) {
           if (!song || typeof song.id !== "string" || typeof song.name !== "string" || typeof song.source !== "string") continue;
           if (removedBundledSongIds.has(song.id)) continue;
+          if (['user-20261024-edelweiss-share','user-20261024-canon-share','user-1792657188767-06mqg','user-1792658715575-ygkqm'].includes(song.id) && !window.OTOIRO_PORTABLE_APP) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
             const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);
@@ -3176,7 +3190,7 @@
 
       function updateReadyBpm() {
         const tempoScale = practiceModeInput.checked ? 100 / settings.practiceTempo : 1;
-        document.getElementById("bpmValue").textContent = `BPM ${Math.round(chart.bpm / tempoScale)}`;
+        document.getElementById("bpmValue").textContent = chart ? `BPM ${Math.round(chart.bpm / tempoScale)}` : '公開中の曲がありません';
       }
 
       notes.forEach((note, index) => {
@@ -4102,7 +4116,7 @@
       });
 
       function startGame(orientationAccepted = false) {
-        if (state === "free" || isRecording) return;
+        if (state === "free" || isRecording || !songSelect.value) return;
         if (state === "playing") return;
         if (orientationAccepted !== true && requestOrientation(() => startGame(true))) return;
         if (state === "paused") {
@@ -4428,8 +4442,8 @@
       initialProjectRestore.catch(() => {}).then(loadSharedSong);
       window.addEventListener("hashchange", loadSharedSong);
       function openFeedbackFromLink() {
-        if (location.hash !== "#feedback") return;
-        const feedback = document.getElementById("feedback");
+        if (!["#feedback", "#contact"].includes(location.hash)) return;
+        const feedback = document.getElementById(location.hash.slice(1));
         if (!feedback) return;
         feedback.open = true;
         feedback.scrollIntoView({ block: "start" });
