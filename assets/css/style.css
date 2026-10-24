@@ -94,10 +94,13 @@
     .free-custom-key button:disabled { opacity: .4; }
     .free-custom-key output { font: 12px var(--mono); }
     #freeTuningSummary { color: #80502e; line-height: 1.7; }
-    .app.is-playing:not(.is-free-play) .free-tuning { display: none; }
+    .free-display-toggle { display: block; width: calc(100% - 6px); margin: -7px 3px 14px; }
+    .app.is-playing:not(.is-free-play) .free-tuning, .app.is-playing:not(.is-free-play) .free-display-toggle { display: none; }
     .app.is-free-play .main-column { position: relative; }
     .app.is-free-play .free-tuning { position: absolute; z-index: 8; top: 12px; left: 12px; margin: 0; max-width: calc(100% - 24px); }
     .app.is-free-play .free-tuning[open] { top: 56px; width: min(600px, calc(100% - 24px)); max-height: calc(100% - 155px); overflow-y: auto; overscroll-behavior: contain; }
+    .app.is-free-play .free-display-toggle { position: absolute; z-index: 8; top: 58px; left: 12px; width: auto; margin: 0; padding: 8px 12px; }
+    .app.is-free-play .main-column:has(.free-tuning[open]) .free-display-toggle { display: none; }
     .main-column { min-width: 0; }
     .section-top { display: flex; align-items: end; justify-content: space-between; margin: 0 3px 16px; }
     .eyebrow { color: #9b5f34; font-size: 11px; letter-spacing: .1em; margin-bottom: 7px; }
@@ -559,6 +562,7 @@
     .app.is-playing .orientation-hint, .app.is-playing .practice-start-control { display: none; }
     .app.is-free-play .free-tuning { top: 10px; left: 10px; max-width: calc(100% - 140px); padding: 10px 14px; }
     .app.is-free-play .free-tuning[open] { top: 10px; width: min(600px, calc(100% - 140px)); max-height: calc(100% - 110px); }
+    .app.is-free-play .free-display-toggle { top: 58px; left: 10px; }
     .app.is-free-play .main-column:has(.free-tuning[open]) .free-play-info { visibility: hidden; }
     .app.is-playing .overlay { overflow-y: auto; overscroll-behavior: contain; }
     @media (orientation: landscape) and (max-height: 600px) {

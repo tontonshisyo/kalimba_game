@@ -66,7 +66,8 @@
         remove.className = "delete";
         remove.textContent = "このデータを削除";
         remove.addEventListener("click", async () => {
-          if (busy || !session || !/^[0-9a-f-]{36}$/.test(row.id)) return;
+          const validId = kind === "catalog_songs" ? /^[A-Za-z0-9_-]{1,100}$/.test(row.id) : /^[0-9a-f-]{36}$/.test(row.id);
+          if (busy || !session || !validId) return;
           if (!window.confirm(`「${heading.textContent}」を完全に削除しますか？この操作は取り消せません。`)) return;
           const deleteRevision = revision;
           setBusy(true);
@@ -82,10 +83,10 @@
         });
         article.append(heading, body, date, document.createElement("br"), remove);
         if (kind === 'catalog_songs') {
-          remove.hidden = true;
+          remove.textContent = 'この曲を削除';
           const toggle = document.createElement('button'); toggle.textContent = row.is_visible ? '非公開にする' : '公開する';
           toggle.onclick = async () => { if(busy)return; if(!confirm(`${row.title}を${row.is_visible?'非公開':'公開'}にしますか？`))return; setBusy(true); try { const result=await request(`/rest/v1/catalog_songs?id=eq.${encodeURIComponent(row.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_visible:!row.is_visible})});const updated=await result.json();if(updated.length!==1)throw Error('更新できませんでした');setBusy(false);await loadItems(true); }catch(e){status(e.message)}finally{setBusy(false)} };
-          article.append(toggle);
+          article.append(toggle, remove);
         }
         if (kind === "beta_feedback") {
           const visibility = document.createElement("p");
