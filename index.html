@@ -238,7 +238,7 @@
               </div>
               <textarea id="shareLinkOutput" class="share-link-output" rows="3" readonly aria-label="ハッシュタグ付きSNS投稿用の共有文" hidden></textarea>
               <p class="chart-help">共有文には「#おといろ」「#カリンバ」「#音ゲー」が入ります。</p>
-            <p class="chart-help">譜面と保存済みの伴奏を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。</p>
+            <p class="chart-help">譜面を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。</p>
               <details><summary>以前の共有ファイルを読み込む</summary><button class="creator-button" id="importShareButton" type="button">ファイルを選択</button></details>
               <p id="shareStatus" class="chart-help" role="status" aria-live="polite"></p>
             </div>
@@ -275,7 +275,6 @@
 6,G4</textarea>
             <p class="chart-help" id="creatorChartHelp">使える音：D6 B5 G5 E5 C5 A4 F4 D4 C4 E4 G4 B4 D5 F5 A5 C6 E6</p>
             <div class="creator-actions">
-              <button class="creator-button creator-button-primary" id="openAccompanimentButton" type="button">伴奏を自動生成・編集</button>
               <button class="creator-button" id="loadChartButton" type="button">選択中の曲を更新</button>
               <button class="creator-button" id="saveChartButton" type="button">選択中の曲に保存</button>
               <button class="creator-button creator-button-primary" id="saveNewChartButton" type="button">この端末に新しい曲を保存</button>
@@ -356,49 +355,6 @@
     <div class="orientation-actions"><button class="creator-button" id="shareFreeVideoButton" type="button" hidden>動画とコメントを共有</button><button class="creator-button" id="saveFreeVideoButton" type="button" hidden>動画を保存</button><button class="creator-button" id="copyFreeVideoComment" type="button">ハッシュタグ付きコメントをコピー</button><button class="creator-button" id="closeFreeVideoButton" type="button">閉じる</button></div>
     <p class="chart-help">共有先によって対応形式やコメントの扱いが異なります。必要に応じて動画を保存し、コメントをコピーして投稿してください。</p>
   </dialog>
-  <dialog id="accompanimentDialog" class="orientation-dialog accompaniment-dialog" aria-labelledby="accompTitle">
-    <h2 id="accompTitle">弦楽器の伴奏</h2>
-    <p>製作者向けの機能です。メロディーの音から伴奏を作って編集・試聴できます。通常プレイ中には伴奏は鳴りません。拍子なしの場合は4拍ごとにコードを推定します。</p>
-    <div class="accomp-controls">
-      <label>伴奏スタイル<select id="accompStyle"><option value="chamber">室内楽</option><option value="pizzicato">ピチカート</option><option value="dreamy">幻想的</option><option value="simple">シンプル</option></select></label>
-      <label>候補<select id="accompCandidate"><option value="0">候補 1</option><option value="1">候補 2</option><option value="2">候補 3</option></select></label>
-      <button class="creator-button creator-button-primary" id="accompGenerate" type="button">全パートを生成</button>
-    </div>
-    <p id="accompBarLength" class="chart-help"></p>
-    <section class="accomp-chord-section"><h3>コード進行（小節ごとに変更できます）</h3><div id="accompChords" class="accomp-chords"></div></section>
-    <section class="accomp-part-section">
-      <div class="accomp-part-controls">
-        <label>パート<select id="accompPart"><option value="cello">チェロ</option><option value="viola">ヴィオラ</option><option value="violin">ヴァイオリン</option></select></label>
-        <label>音色<select id="accompInstrument"><option value="strings">弓弦</option><option value="pizzicato">ピチカート</option><option value="pad">持続音</option></select></label>
-        <label class="accomp-volume">音量 <input id="accompPartVolume" type="range" min="0" max="100" value="46"></label>
-        <label class="accomp-toggle"><input id="accompMute" type="checkbox"> ミュート</label>
-        <button id="accompSolo" class="creator-button" type="button">ソロ／解除</button>
-        <button id="accompRegenerate" class="creator-button" type="button">このパートを再生成</button>
-      </div>
-      <p class="chart-help">横軸は拍、縦軸は音高です。背景の薄い印はメロディーです。空白をタップして音符を追加、音符をドラッグして移動できます。</p>
-      <div class="accomp-roll-scroll" tabindex="0" aria-label="横スクロールできる伴奏ピアノロール"><svg id="accompRoll" class="accomp-roll" role="application" aria-label="伴奏音符のピアノロール"></svg></div>
-      <div class="accomp-note-tools">
-        <label>拍 <input id="accompNoteBeat" type="number" min="0" max="10000" step="0.25" value="0"></label>
-        <label>音高 <select id="accompNotePitch"></select></label>
-        <label>音価（拍） <input id="accompNoteDuration" type="number" min="0.125" max="16" step="0.125" value="1"></label>
-        <button id="accompAdd" class="creator-button" type="button">音符を追加</button>
-        <button id="accompDelete" class="creator-button" type="button" disabled>削除</button>
-        <button id="accompCopy" class="creator-button" type="button">コピー</button>
-        <button id="accompPaste" class="creator-button" type="button">貼り付け</button>
-        <button id="accompUndo" class="creator-button" type="button" disabled>元に戻す</button>
-        <button id="accompRedo" class="creator-button" type="button" disabled>やり直す</button>
-      </div>
-    </section>
-    <p id="accompanimentStatus" class="creator-status" role="status" aria-live="polite"></p>
-    <div class="orientation-actions">
-      <button class="creator-button" id="accompPreview" type="button">メロディーと伴奏を試聴</button>
-      <button class="creator-button" id="accompPausePreview" type="button" disabled>一時停止</button>
-      <button class="creator-button" id="accompStopPreview" type="button">停止</button>
-      <button class="creator-button creator-button-primary" id="accompSave" type="button">伴奏を曲に保存</button>
-      <button class="creator-button" type="button" onclick="document.getElementById('accompanimentDialog').close()">閉じる</button>
-    </div>
-    <label class="accomp-seek">試聴位置 <input id="accompSeek" type="range" min="0" max="1" step="0.05" value="0"><output id="accompSeekValue">0:00</output></label>
-  </dialog>
   <script src="assets/js/sharing.js" defer></script>
   <dialog id="recordingReadyDialog" class="orientation-dialog" aria-labelledby="recordingReadyTitle" aria-describedby="recordingReadyCopy">
     <div class="orientation-symbol" aria-hidden="true">↻</div>
@@ -421,7 +377,6 @@
   </dialog>
   <script src="assets/js/result-share.js" defer></script>
   <script src="assets/js/song-library.js" defer></script>
-  <script src="assets/js/accompaniment.js" defer></script>
   <script src="assets/js/game.js" defer></script>
 
   <script src="assets/js/free-video.js" defer></script>

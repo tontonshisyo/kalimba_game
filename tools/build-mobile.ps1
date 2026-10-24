@@ -11,8 +11,7 @@ $sharingJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "asse
 $resultShareJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/result-share.js"), [System.Text.Encoding]::UTF8)
 $songLibraryJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/song-library.js"), [System.Text.Encoding]::UTF8)
 $freeVideoJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/free-video.js"), [System.Text.Encoding]::UTF8)
-$accompanimentJavascript = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/js/accompaniment.js"), [System.Text.Encoding]::UTF8)
-$javascript = $sharingJavascript + "`n" + $resultShareJavascript + "`n" + $songLibraryJavascript + "`n" + $freeVideoJavascript + "`n" + $accompanimentJavascript + "`n" + $javascript
+$javascript = $sharingJavascript + "`n" + $resultShareJavascript + "`n" + $songLibraryJavascript + "`n" + $freeVideoJavascript + "`n" + $javascript
 $chartPack = [System.IO.File]::ReadAllText((Join-Path $projectRoot "assets/data/custom-charts.json"), [System.Text.Encoding]::UTF8) | ConvertFrom-Json
 $embeddedCharts = ConvertTo-Json -InputObject @{ songs = @($chartPack.songs) } -Depth 100 -Compress
 $embeddedCharts = $embeddedCharts.Replace("<", "\u003c")
@@ -32,7 +31,6 @@ $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/sharing\.js"\s+de
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/result-share\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/song-library\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/free-video\.js"\s+defer></script>', "")
-$html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/accompaniment\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<button[^>]*id="exportMobileAppButton"[^>]*>.*?</button>', "")
 $html = [regex]::Replace($html, '(?is)\A\s*<!doctype html>\s*', "")
 $html = $html -replace '(?is)</head>', "<style>`n$css`n</style>`n</head>"
@@ -43,4 +41,3 @@ if ($outputDirectory -and -not (Test-Path -LiteralPath $outputDirectory)) {
 }
 [System.IO.File]::WriteAllText($OutputPath, "<!doctype html>`n$html", [System.Text.UTF8Encoding]::new($false))
 Write-Output "Portable mobile app created: $OutputPath"
-

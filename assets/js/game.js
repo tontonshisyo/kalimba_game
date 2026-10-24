@@ -89,7 +89,6 @@
       const recordingIndicator = document.getElementById("recordingIndicator");
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
-      let accompanimentEditor = null;
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -325,7 +324,7 @@
         return { events, errors };
       }
 
-      function parseCreatorChart(name, bpmValue, source, keySignature = "C", meter = 4, accompaniment = null) {
+      function parseCreatorChart(name, bpmValue, source, keySignature = "C", meter = 4) {
         const title = name.trim();
         const bpm = Number(bpmValue);
         if (!title || title.length > 40) throw new Error("曲名を1〜40文字で入力してください。");
@@ -333,7 +332,7 @@
         const { events } = parseCreatorEvents(source);
         if (!events.length) throw new Error("譜面に音を1つ以上入力してください。");
         if (!freeSignatures.some((entry) => entry.id === keySignature)) throw new Error("対応していない調号です。");
-        return { name: title, bpm, steps: events, directLanes: true, keySignature, meter: [2,3,4,5,6].includes(Number(meter)) ? Number(meter) : null, accompaniment: window.OtoiroAccompaniment?.sanitize(accompaniment) || null };
+        return { name: title, bpm, steps: events, directLanes: true, keySignature, meter: [2,3,4,5,6].includes(Number(meter)) ? Number(meter) : null };
       }
 
       function renderSheetPreview() {
@@ -780,7 +779,7 @@
       function previewCreatorChart() {
         let previewChart;
         try {
-          previewChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value, accompanimentEditor?.getModel());
+          previewChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value);
         } catch (error) {
           showCreatorStatus(error.message, true);
           return;
@@ -839,15 +838,14 @@
           if (removedBundledSongIds.has(entry.id)) continue;
           if (seenIds.has(entry.id)) throw new Error(`${index + 1}曲目: 曲IDが重複しています。`);
           seenIds.add(entry.id);
-          const validated = parseCreatorChart(entry.name, entry.bpm, entry.source, entry.keySignature, entry.meter, entry.accompaniment);
+          const validated = parseCreatorChart(entry.name, entry.bpm, entry.source, entry.keySignature, entry.meter);
           imported.push({
             id: entry.id,
             name: validated.name,
             bpm: validated.bpm,
             keySignature: validated.keySignature,
             source: chartToSource(validated),
-            meter: validated.meter,
-            accompaniment: validated.accompaniment
+            meter: validated.meter
           });
         }
         return imported;
@@ -873,13 +871,12 @@
         }
         makerSongs = songs;
         for (const song of songs) {
-          const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter, song.accompaniment);
-          charts[song.id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter, accompaniment: validated.accompaniment };
+          const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);
+          charts[song.id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter };
           songNames[song.id] = validated.name;
         }
         refreshSongOptions(songSelect.value);
         deleteChartButton.hidden = !songSelect.value.startsWith("user-");
-        if (accompanimentEditor && charts[songSelect.value]) loadSelectedSongIntoEditor();
       }
 
       function openProjectHandleDatabase() {
@@ -929,8 +926,8 @@
       }
 
       function normalizeMakerSong(song) {
-        const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter, song.accompaniment);
-        return { ...song, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter, accompaniment: validated.accompaniment };
+        const validated = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);
+        return { id: song.id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter };
       }
 
       function createChartPack(songs) {
@@ -1094,8 +1091,7 @@
             bpm: charts[id].bpm,
             keySignature: charts[id].keySignature || "C",
             source: chartToSource(charts[id]),
-            meter: charts[id].meter ?? null,
-            accompaniment: charts[id].accompaniment || null
+            meter: charts[id].meter ?? null
           }));
           const pack = { ...createChartPack(songs), exportedAt: new Date().toISOString() };
           const blob = new Blob([JSON.stringify(pack, null, 2)], { type: "application/json" });
@@ -1119,25 +1115,23 @@
         }
         exportMobileAppButton.disabled = true;
         try {
-          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse, songLibraryResponse, freeVideoResponse, accompanimentResponse] = await Promise.all([
+          const [styleResponse, scriptResponse, sharingResponse, resultShareResponse, songLibraryResponse, freeVideoResponse] = await Promise.all([
             fetch("./assets/css/style.css", { cache: "no-store" }),
             fetch("./assets/js/game.js", { cache: "no-store" }),
             fetch("./assets/js/sharing.js", { cache: "no-store" }),
             fetch("./assets/js/result-share.js", { cache: "no-store" }),
             fetch("./assets/js/song-library.js", { cache: "no-store" }),
-            fetch("./assets/js/free-video.js", { cache: "no-store" }),
-            fetch("./assets/js/accompaniment.js", { cache: "no-store" })
+            fetch("./assets/js/free-video.js", { cache: "no-store" })
           ]);
-          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok || !songLibraryResponse.ok || !freeVideoResponse.ok || !accompanimentResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
-          const [styleText, scriptText, sharingText, resultShareText, songLibraryText, freeVideoText, accompanimentText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text(), songLibraryResponse.text(), freeVideoResponse.text(), accompanimentResponse.text()]);
+          if (!styleResponse.ok || !scriptResponse.ok || !sharingResponse.ok || !resultShareResponse.ok || !songLibraryResponse.ok || !freeVideoResponse.ok) throw new Error("アプリのファイルを読み込めませんでした。");
+          const [styleText, scriptText, sharingText, resultShareText, songLibraryText, freeVideoText] = await Promise.all([styleResponse.text(), scriptResponse.text(), sharingResponse.text(), resultShareResponse.text(), songLibraryResponse.text(), freeVideoResponse.text()]);
           const songs = Object.entries(songNames).map(([id, name]) => ({
             id: id.startsWith("community-") ? `user-${id}` : id,
             name,
             bpm: charts[id].bpm,
             keySignature: charts[id].keySignature || "C",
             source: chartToSource(charts[id]),
-            meter: charts[id].meter ?? null,
-            accompaniment: charts[id].accompaniment || null
+            meter: charts[id].meter ?? null
           }));
           const pack = createChartPack(songs);
           const portableDocument = document.documentElement.cloneNode(true);
@@ -1156,10 +1150,9 @@
           portableDocument.querySelector('script[src="assets/js/result-share.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/song-library.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/free-video.js"]')?.remove();
-          portableDocument.querySelector('script[src="assets/js/accompaniment.js"]')?.remove();
           portableDocument.querySelector("#resultPanel").hidden = true;
           const embeddedPack = JSON.stringify(pack).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
-          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${songLibraryText.replace(/<\/script/gi, "<\\/script")}\n${freeVideoText.replace(/<\/script/gi, "<\\/script")}\n${accompanimentText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
+          portableScript.textContent = `window.OTOIRO_PORTABLE_APP=true;window.OTOIRO_EMBEDDED_CHARTS=${embeddedPack};\n${sharingText.replace(/<\/script/gi, "<\\/script")}\n${resultShareText.replace(/<\/script/gi, "<\\/script")}\n${songLibraryText.replace(/<\/script/gi, "<\\/script")}\n${freeVideoText.replace(/<\/script/gi, "<\\/script")}\n${scriptText.replace(/<\/script/gi, "<\\/script")}`;
           oldScript.replaceWith(portableScript);
           const blob = new Blob(["<!doctype html>\n", portableDocument.outerHTML], { type: "text/html;charset=utf-8" });
           const url = URL.createObjectURL(blob);
@@ -1252,9 +1245,9 @@
           if (removedBundledSongIds.has(song.id)) continue;
           if (!(song.id in builtInSongNames) && !song.id.startsWith("user-")) continue;
           try {
-            const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter, song.accompaniment);
-            restored.push({ id: song.id, name: restoredChart.name, bpm: restoredChart.bpm, keySignature: restoredChart.keySignature, source: chartToSource(restoredChart) });
-            charts[song.id] = { bpm: restoredChart.bpm, steps: restoredChart.steps, directLanes: true, keySignature: restoredChart.keySignature, meter: restoredChart.meter, accompaniment: restoredChart.accompaniment };
+            const restoredChart = parseCreatorChart(song.name, song.bpm, song.source, song.keySignature, song.meter);
+            restored.push({ id: song.id, name: restoredChart.name, bpm: restoredChart.bpm, keySignature: restoredChart.keySignature, source: chartToSource(restoredChart), meter: restoredChart.meter });
+            charts[song.id] = { bpm: restoredChart.bpm, steps: restoredChart.steps, directLanes: true, keySignature: restoredChart.keySignature, meter: restoredChart.meter };
             songNames[song.id] = restoredChart.name;
           } catch (error) {
             console.warn(`譜面「${song.name}」を読み込めませんでした。`, error);
@@ -1280,7 +1273,6 @@
         creatorMeterInput.value = selectedChart.meter === null ? "none" : String(selectedChart.meter || 4);
         creatorChartInput.value = chartToSource(selectedChart);
         renderSheetPreview();
-        accompanimentEditor?.setModel(selectedChart.accompaniment);
         deleteChartButton.hidden = !id.startsWith("user-");
         showCreatorStatus(`「${songNames[id]}」を読み込みました。`);
       }
@@ -1292,17 +1284,17 @@
           : selectedId;
         let validated;
         try {
-          validated = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value, accompanimentEditor?.getModel() || charts[selectedId]?.accompaniment);
+          validated = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value);
         } catch (error) {
           showCreatorStatus(error.message, true);
           return;
         }
-        const song = { id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter, accompaniment: validated.accompaniment };
+        const song = { id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter };
         const updatedSongs = makerSongs.filter((item) => item.id !== id);
         updatedSongs.push(song);
         if (!persistMakerSongs(updatedSongs)) return;
         makerSongs = updatedSongs;
-        charts[id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter, accompaniment: validated.accompaniment };
+        charts[id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter };
         songNames[id] = validated.name;
         refreshSongOptions(id);
         loadSelectedSongIntoEditor();
@@ -1329,43 +1321,6 @@
       });
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
-      accompanimentEditor = window.OtoiroAccompaniment?.mount({
-        getMelody: () => creatorChartInput.value,
-        getBpm: () => Number(creatorBpmInput.value) || 100,
-        getKeySignature: () => creatorKeySignatureInput.value,
-        getModel: () => charts[songSelect.value]?.accompaniment || null,
-        getAudioContext: () => getKalimbaAudio().context,
-        saveModel: (model) => {
-          const id = songSelect.value;
-          let validated;
-          try { validated = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value, model); }
-          catch (error) { showCreatorStatus(error.message, true); return; }
-          const song = { id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter, accompaniment: model };
-          const updated = [...makerSongs.filter((entry) => entry.id !== id), song];
-          if (!persistMakerSongs(updated)) return;
-          makerSongs = updated;
-          charts[id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter, accompaniment: model };
-          songNames[id] = validated.name;
-          refreshSongOptions(id);
-          syncProjectSongs(updated);
-          showCreatorStatus(`「${validated.name}」の譜面と伴奏をこのブラウザーに保存しました。`);
-        },
-        previewMelody: (from = 0) => {
-          let preview;
-          try { preview = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value); }
-          catch { return null; }
-          const scheduled = [];
-          const events = getArpeggiatedEvents(preview.steps, true).events;
-          const origin = performance.now();
-          const beatMs = 60000 / preview.bpm;
-          for (const event of events) {
-            const eventTime = event.step * beatMs / 2 + event.offset;
-            if (eventTime >= from * 1000) scheduled.push(window.setTimeout(() => playTone(event.lane, preview.keySignature), Math.max(0, origin + eventTime - from * 1000 - performance.now())));
-          }
-          return () => scheduled.forEach((timer) => clearTimeout(timer));
-        }
-      });
-      accompanimentEditor?.setModel(charts[songSelect.value]?.accompaniment);
       const initialProjectRestore = restoreProjectSongs();
       function loadSettings() {
         try {
@@ -2402,7 +2357,7 @@
         if (orientationAccepted !== true && requestOrientation(() => startTestPlay(true))) return;
         let testChart;
         try {
-          testChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value, accompanimentEditor?.getModel());
+          testChart = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value);
         } catch (error) {
           showCreatorStatus(error.message, true);
           return;
@@ -2410,7 +2365,7 @@
         const startBeat = getStartBeat(testStartBeatInput, testChart);
         if (startBeat === null) return;
         stopPreview();
-        chart = { bpm: testChart.bpm, steps: testChart.steps, directLanes: true, keySignature: testChart.keySignature, meter: testChart.meter, accompaniment: testChart.accompaniment };
+        chart = { bpm: testChart.bpm, steps: testChart.steps, directLanes: true, keySignature: testChart.keySignature, meter: testChart.meter };
         practiceMode = practiceModeInput.checked;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
@@ -2594,7 +2549,7 @@
         shareStatus.textContent = "共有リンクを作成しています…";
         const snapshot = [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value].join("\n");
         try {
-          const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value, accompanimentEditor?.getModel());
+          const parsed = parseCreatorChart(creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value);
           const link = await window.OtoiroSharing.createLink(parsed);
           if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
           preparedShareLink = link;
@@ -2651,10 +2606,10 @@
             const note = notes[item[1]];
             return (item[0] / 2) + "," + note.name + note.octave;
           }).join("\n");
-          const parsed = parseCreatorChart(data.name, data.bpm, source, data.keySignature, data.meter, data.accompaniment);
+          const parsed = parseCreatorChart(data.name, data.bpm, source, data.keySignature, data.meter);
           if (sharedSongId && !makerSongs.some(song => song.id === sharedSongId)) { delete charts[sharedSongId]; delete songNames[sharedSongId]; }
           sharedSongId = "user-link-" + Date.now() + "-" + sequence;
-          charts[sharedSongId] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature, meter: parsed.meter, accompaniment: parsed.accompaniment };
+          charts[sharedSongId] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature, meter: parsed.meter };
           songNames[sharedSongId] = parsed.name;
           refreshSongOptions(sharedSongId);
           loadSelectedSongIntoEditor();

@@ -132,8 +132,8 @@
   }
   async function createLink(song) {
     if (!song.steps.length || song.steps.length > 2000) throw new Error("共有できる音符は1〜2000個です。");
-    const hasExtensions = song.meter !== undefined || song.accompaniment;
-    let raw = hasExtensions ? encoder.encode(JSON.stringify([song.name, song.bpm, song.keySignature, song.steps, song.meter ?? null, song.accompaniment || null])) : packSong(song);
+    const hasExtensions = song.meter !== undefined;
+    let raw = hasExtensions ? encoder.encode(JSON.stringify([song.name, song.bpm, song.keySignature, song.steps, song.meter ?? null])) : packSong(song);
     let type = hasExtensions ? "j" : "b";
     if (!raw) { raw = encoder.encode(JSON.stringify([song.name, song.bpm, song.keySignature, song.steps])); type = "j"; }
     if (typeof CompressionStream === "function" && typeof DecompressionStream === "function") {
@@ -153,9 +153,8 @@
       bytes = new Uint8Array(await boundedBytes(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))));
     }
     if (match[1] === "b" || match[1] === "g") return unpackSong(bytes);
-    const [name, bpm, keySignature, steps, meter = 4, accompaniment = null] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-    return { name, bpm, keySignature, steps, meter, accompaniment };
+    const [name, bpm, keySignature, steps, meter = 4] = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    return { name, bpm, keySignature, steps, meter };
   }
   window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, publicBaseURL, withHashtags });
 })();
-
