@@ -1320,7 +1320,7 @@
           const config = await configResponse.json();
           const endpoint = new URL(config.url);
           if (endpoint.protocol !== "https:" || !/^[a-z0-9-]+[.]supabase[.]co$/.test(endpoint.hostname) || !/^sb_publishable_/.test(config.publishableKey)) throw new Error("Supabase接続設定が正しくありません。");
-          const response = await fetch(config.url + "/rest/v1/otoiro_official_songs?select=id,title,bpm,key_signature,notes&is_published=eq.true&order=created_at.asc,id.asc&limit=1000", {
+          const response = await fetch(endpoint.origin + "/rest/v1/otoiro_official_songs?select=id,title,bpm,key_signature,notes&is_published=eq.true&order=created_at.asc,id.asc&limit=1000", {
             cache: "no-store",
             signal: AbortSignal.timeout(15000),
             headers: { apikey: config.publishableKey }
