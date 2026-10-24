@@ -828,7 +828,7 @@
           <div id="songCards" class="song-cards" role="group" aria-label="演奏する曲を選択"></div>
           <p id="songLibraryEmpty" class="chart-help" role="status" hidden>条件に合う曲がありません。</p>
           <div class="song-library-selection"><p id="songSelectionSummary" role="status"></p><button class="creator-button creator-button-primary" id="playSelectedSongButton" type="button">選択した曲を演奏</button></div>
-          <details class="song-difficulty-help"><summary>難易度の目安</summary><p>元のテンポでの平均音符数、最も音符が多い4秒間、和音の頻度と厚さ、曲の長さから自動判定します。長くゆったりした曲でも和音の難しさを反映し、「めちゃむず」は難しい演奏がある程度続く曲に限ります。練習中の速度変更では難易度は変わりません。</p></details>
+          <details class="song-difficulty-help"><summary>難易度の目安</summary><p>元のテンポで演奏する頻度、最も忙しい4秒間、和音が続く頻度、曲の長さから自動判定します。同じタイミングの和音は1回として密度を数え、和音の難しさは別に加えます。「めちゃむず」は難しい演奏がある程度続く曲に限ります。</p></details>
         </section>
         <section class="shared-song-panel" id="sharedSongPanel" aria-label="共有された曲" hidden>
           <h2 id="sharedSongTitle">共有された曲</h2>
@@ -1500,8 +1500,12 @@
   // Original chart tempo. Also account for chord technique so long, calm songs
   // are not rated as easy merely because their overall note density is low.
   function measure(chart) {
-    const times = chart.steps.map(([step]) => step * 30 / chart.bpm).sort((a, b) => a - b);
-    if (!times.length) return { level: 0, label: labels[0], count: 0, average: 0, peak: 0, harmony: 0, index: 0 };
+    if (!chart.steps.length) return { level: 0, label: labels[0], count: 0, average: 0, peak: 0, harmony: 0, index: 0 };
+    const chordSizes = new Map();
+    for (const [step] of chart.steps) chordSizes.set(step, (chordSizes.get(step) || 0) + 1);
+    // Count one onset per timing position here. Chord tones are evaluated
+    // separately below, avoiding a single thick chord dominating density.
+    const times = [...chordSizes.keys()].map(step => step * 30 / chart.bpm).sort((a, b) => a - b);
     const span = times[times.length - 1] - times[0] + 60 / chart.bpm;
     const average = times.length / span;
     const windowSeconds = Math.min(4, span);
@@ -1510,21 +1514,19 @@
       while (times[right] - times[left] >= windowSeconds) left++;
       peak = Math.max(peak, (right - left + 1) / windowSeconds);
     }
-    const chordSizes = new Map();
-    for (const [step] of chart.steps) chordSizes.set(step, (chordSizes.get(step) || 0) + 1);
     const sizes = [...chordSizes.values()];
-    const chordTones = sizes.reduce((sum, size) => sum + (size > 1 ? size : 0), 0);
-    const chordToneRatio = chordTones / times.length;
-    const extraTonesPerOnset = (times.length - sizes.length) / sizes.length;
-    const largestChord = Math.max(...sizes);
-    const harmony = chordToneRatio * .5
-      + extraTonesPerOnset * .4
-      + Math.max(0, largestChord - 2) * .1;
+    const chordCount = sizes.filter(size => size > 1).length;
+    const chordRate = chordCount / span;
+    const chordRatio = chordCount / sizes.length;
+    // Cap each chord's thickness contribution. Six notes at one position are
+    // harder than two, but should not outweigh repeated fast playing.
+    const chordLoad = sizes.reduce((sum, size) => sum + Math.min(Math.max(size - 1, 0), 2), 0) / sizes.length;
+    const harmony = chordRate * .8 + chordRatio * .5 + chordLoad * .35;
     const index = average * .65 + peak * .35 + harmony;
     // Reserve the highest rating for songs that sustain their difficulty.
     // A short song with one dense chord can still be hard, but not "めちゃむず".
-    const level = index < 3 ? 0 : index < 3.6 ? 1 : index < 5 || span < 30 ? 2 : 3;
-    return { level, label: labels[level], count: times.length, average, peak, harmony, index };
+    const level = index < 2.4 ? 0 : index < 3 ? 1 : index < 4 || span < 30 ? 2 : 3;
+    return { level, label: labels[level], count: chart.steps.length, average, peak, harmony, index };
   }
   function mount({ select, getSongs }) {
     const grid = document.getElementById("songCards");
@@ -1571,7 +1573,7 @@
         meta.textContent = "BPM " + song.chart.bpm + " · " + difficulty.count + "音";
         const density = document.createElement("span");
         density.className = "song-card-density";
-        density.textContent = "平均 " + difficulty.average.toFixed(1) + "音/秒";
+        density.textContent = "平均 " + difficulty.average.toFixed(1) + "回/秒";
         info.append(title, meta, density);
         const footer = document.createElement("span");
         footer.className = "song-card-footer";
