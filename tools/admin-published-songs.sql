@@ -33,4 +33,4 @@ create policy otoiro_official_songs_admin_delete on public.otoiro_official_songs
   for delete to authenticated using (
     exists (select 1 from public.otoiro_admins where user_id = auth.uid())
   );
-commit;
+notify pgrst, 'reload schema'; commit;
