@@ -1,9 +1,13 @@
-# 曲投稿の廃止とファイル共有への移行
+# 曲の投稿機能と管理者による公式曲公開
 
-一般公開の曲一覧と投稿APIは廃止しました。新しい操作方法は [SHARING.md](SHARING.md) を参照してください。
+一般ユーザーの曲投稿機能は無効です。既存の投稿データは削除されず、管理画面からも表示しません。ブラウザー内で作成した曲は、引き続き共有リンクで渡せます。操作方法は [SHARING.md](SHARING.md) を参照してください。
 
-既存のSupabase環境では community-sharing-only.sql を実行すると、曲の一般閲覧・投稿権限を取り消し、管理者専用の閲覧・削除権限だけを残します。今回の対象プロジェクトには適用済みです。データ自体は削除しません。
+管理者は管理画面で譜面を作成して「曲を登録して全員に公開」できます。公開した曲は全利用者の曲一覧に追加され、管理画面から削除できます。
 
-community-config.json は意見箱と管理画面で引き続き使用します。曲の作成・保存・共有にはSupabaseを使用しません。
-community-schema.sql も、今後実行して一般公開が再開されない設定に変更済みです。
+## Supabaseの設定
 
+1. 既存環境では、必要に応じて [community-sharing-only.sql](community-sharing-only.sql) を実行し、一般ユーザーの投稿・閲覧権限を無効にします。既存データは削除しません。
+2. [admin-published-songs.sql](admin-published-songs.sql) をSupabase SQL Editorで実行し、管理者公開曲テーブルとRLSポリシーを作成します。このSQLは [community-schema.sql](community-schema.sql) の otoiro_valid_notes 関数と、既存の otoiro_admins テーブルを使用します。
+3. 管理者として登録済みのアカウントで管理画面へログインし、曲を作成・公開します。
+
+community-config.json は管理画面と意見箱、公開曲の読み込みに使用します。Supabaseの移行を実行するまでは、管理画面の公開曲操作と一般利用者への公開は利用できません。
