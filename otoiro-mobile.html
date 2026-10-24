@@ -828,7 +828,7 @@
           <div id="songCards" class="song-cards" role="group" aria-label="演奏する曲を選択"></div>
           <p id="songLibraryEmpty" class="chart-help" role="status" hidden>条件に合う曲がありません。</p>
           <div class="song-library-selection"><p id="songSelectionSummary" role="status"></p><button class="creator-button creator-button-primary" id="playSelectedSongButton" type="button">選択した曲を演奏</button></div>
-          <details class="song-difficulty-help"><summary>難易度の目安</summary><p>元のテンポで演奏する頻度、最も忙しい4秒間、和音が続く頻度、曲の長さから自動判定します。同じタイミングの和音は1回として密度を数え、和音の難しさは別に加えます。「めちゃむず」は難しい演奏がある程度続く曲に限ります。</p></details>
+          <details class="song-difficulty-help"><summary>難易度の目安</summary><p>元のテンポで演奏する頻度、最も忙しい4秒間、和音が続く頻度、曲の長さから自動判定します。同じタイミングの和音は1回として密度を数え、和音の難しさは別に加えます。演奏位置の8％以上が和音なら最低でも「ふつう」、「めちゃむず」は難しい演奏がある程度続く曲に限ります。</p></details>
         </section>
         <section class="shared-song-panel" id="sharedSongPanel" aria-label="共有された曲" hidden>
           <h2 id="sharedSongTitle">共有された曲</h2>
@@ -1525,7 +1525,10 @@
     const index = average * .65 + peak * .35 + harmony;
     // Reserve the highest rating for songs that sustain their difficulty.
     // A short song with one dense chord can still be hard, but not "めちゃむず".
-    const level = index < 2.4 ? 0 : index < 3 ? 1 : index < 4 || span < 30 ? 2 : 3;
+    const measuredLevel = index < 2.4 ? 0 : index < 3 ? 1 : index < 4 || span < 30 ? 2 : 3;
+    // Easy songs should remain approachable for beginners and therefore be
+    // predominantly single-note melodies. Frequent chords set a normal floor.
+    const level = chordRatio >= .08 ? Math.max(1, measuredLevel) : measuredLevel;
     return { level, label: labels[level], count: chart.steps.length, average, peak, harmony, index };
   }
   function mount({ select, getSongs }) {
