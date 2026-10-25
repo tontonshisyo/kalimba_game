@@ -32,7 +32,7 @@
     const measuredLevel = index < 2.4 ? 0 : index < 3 ? 1 : index < 4 || span < 30 ? 2 : 3;
     // Easy songs should remain approachable for beginners and therefore be
     // predominantly single-note melodies. Frequent chords set a normal floor.
-    const level = chordRatio >= .08 ? Math.max(1, measuredLevel) : measuredLevel;
+    const level = chordRatio >= .15 ? Math.max(1, measuredLevel) : measuredLevel;
     return { level, label: labels[level], count: chart.steps.length, average, peak, harmony, index };
   }
   function mount({ select, getSongs }) {
