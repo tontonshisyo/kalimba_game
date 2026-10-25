@@ -27,6 +27,7 @@ $html = [regex]::Replace($html, '(?is)<button[^>]*id="connectProjectButton"[^>]*
 $html = [regex]::Replace($html, '(?is)<p\s+class="project-folder-help">.*?</p>', "")
 $html = [regex]::Replace($html, '(?is)<details\b[^>]*class="beta-feedback"[^>]*>.*?</details>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/feedback\.js"\s+defer></script>', "")
+$html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/analytics\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/diagnostics\.js"></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/sharing\.js"\s+defer></script>', "")
 $html = [regex]::Replace($html, '(?is)<script\s+src="assets/js/result-share\.js"\s+defer></script>', "")

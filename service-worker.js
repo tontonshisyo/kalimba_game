@@ -1,8 +1,9 @@
 "use strict";
 
-const CACHE_NAME = "otoiro-shell-v126";
+const CACHE_NAME = "otoiro-shell-v127";
 // Deploy the compact-link sharing UI and receiver together.
 const APP_FILES = [
+  "./assets/js/analytics.js",
   "./",
   "./index.html",
   "./about.html",

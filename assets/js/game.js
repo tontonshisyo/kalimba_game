@@ -204,6 +204,17 @@
       let runTempoScale = 1;
       let activeNotes = [];
       let activeTimingLines = [];
+      const trackUsage = (event, props) => window.OtoiroAnalytics?.track(event, props);
+      let usageRun = null;
+      function beginUsageRun(mode) {
+        usageRun = {mode, song: mode === 'test' || mode === 'tutorial' ? 'custom' : songSelect.value, notes: activeNotes.length, bpm: chart?.bpm || 0};
+        trackUsage('game_start', usageRun);
+      }
+      function endUsageRun(event) {
+        if (!usageRun) return;
+        trackUsage(event, {...usageRun, seconds: Math.max(0, ((practiceHoldAt ?? (state === 'paused' ? pausedAt : performance.now())) - startedAt) / 1000), score: calculateScore(), perfect: perfectCount, good: goodCount, miss: missCount, extra: extraCount, combo: bestCombo, accuracy: judged + extraCount ? Math.round(accuracyPoints / (judged + extraCount)) : 0});
+        usageRun = null;
+      }
       let freeNotes = [];
       let freeRecording = [];
       let freeRecordStartedAt = null;
@@ -819,6 +830,7 @@
         stopPreview();
         prepareRecordingAudio();
         isRecording = true;
+        trackUsage('recording_start', {mode: overdub ? 'overdub' : 'new', bpm});
         updateKeyLabels();
         recordingStartedAt = Number.POSITIVE_INFINITY;
         recordingBeatDuration = 60000 / bpm;
@@ -860,6 +872,7 @@
 
       function stopRecording(discard = false) {
         if (!isRecording) return;
+        trackUsage('recording_end', {reason: discard === true ? 'discard' : 'save', notes: recordingEvents.length, seconds: Number.isFinite(recordingStartedAt) ? Math.max(0, (performance.now()-recordingStartedAt)/1000) : 0});
         isRecording = false;
         updateKeyLabels();
         window.clearTimeout(recordingTickTimer);
@@ -1278,6 +1291,7 @@
           portableDocument.querySelectorAll(".beta-feedback").forEach(node=>node.remove());
           portableDocument.querySelector('script[src="assets/js/feedback.js"]')?.remove();
           portableDocument.querySelector('script[src="assets/js/diagnostics.js"]')?.remove();
+          portableDocument.querySelector('script[src="assets/js/analytics.js"]')?.remove();
           const portableStyle = document.createElement("style");
           portableStyle.textContent = styleText.replace(/<\/style/gi, "<\\/style");
           portableDocument.querySelector("head").append(portableStyle);
@@ -1437,6 +1451,7 @@
         const updatedSongs = makerSongs.filter((item) => item.id !== id);
         updatedSongs.push(song);
         if (!persistMakerSongs(updatedSongs)) return;
+        trackUsage('song_saved', {notes: validated.steps.length, bpm: validated.bpm});
         makerSongs = updatedSongs;
         charts[id] = { bpm: validated.bpm, steps: validated.steps, directLanes: true, keySignature: validated.keySignature, meter: validated.meter };
         songNames[id] = validated.name;
@@ -2478,6 +2493,7 @@
         isTestPlay = false;
         pausedAt = 0;
         state = "free";
+        trackUsage('free_start');
         refreshFreeRecordingControls();
         updateKeyLabels();
         document.getElementById("freeTuningPanel").open = false;
@@ -2532,6 +2548,7 @@
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
         activeNotes = createActiveNotes(chart, startBeat);
         activeTimingLines = createActiveTimingLines(chart, startBeat);
+        beginUsageRun(isTutorial ? 'tutorial' : practiceMode ? 'practice' : 'normal');
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -2578,6 +2595,7 @@
         selectionControls.forEach((control) => { control.disabled = true; });
         activeNotes = createActiveNotes(chart, startBeat);
         activeTimingLines = createActiveTimingLines(chart, startBeat);
+        beginUsageRun('test');
         effects = [];
         score = 0; combo = 0; bestCombo = 0; judged = 0; accuracyPoints = 0;
         perfectCount = 0; goodCount = 0; missCount = 0; extraCount = 0;
@@ -2625,6 +2643,7 @@
 
       function pauseGame() {
         if (state !== "playing") return;
+        trackUsage('game_pause', {mode: usageRun?.mode || 'normal'});
         document.getElementById("freePlayButton").hidden = true;
         clearPointerInteraction();
         pausedAt = performance.now();
@@ -2644,6 +2663,8 @@
 
       function stopGame() {
         if (state !== "paused" && state !== "free") return;
+        if (state === 'free') trackUsage('free_exit');
+        else endUsageRun('game_exit');
         if (isTutorial) {
           isTutorial = false;
           chart = charts[songSelect.value];
@@ -2679,6 +2700,7 @@
       }
 
       function finishGame() {
+        endUsageRun('game_finish');
         document.getElementById("freePlayButton").hidden = false;
         if (isTutorial) {
           state = "paused";
@@ -2766,6 +2788,7 @@
           if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
           preparedShareLink = link;
           originalShareLink = link;
+          trackUsage('share_created', {notes: parsed.steps.length});
           preparedShareSong = parsed;
           shortenShareButton.hidden = false;
           shareLinkOutput.value = songShareText(parsed.name, link);
@@ -2786,10 +2809,11 @@
           if (preparedShareSong !== song) return;
           preparedShareLink = link;
           shareLinkOutput.value = songShareText(song.name, link);
+          trackUsage('share_shortened', {notes: song.steps.length});
           shortenShareButton.hidden = true;
           restoreLongShareButton.hidden = false;
           shareStatus.textContent = '短縮しました。容量整理で削除される場合があるため、長いURLも保管してください。';
-        } catch(error) { if (preparedShareSong === song) shareStatus.textContent = error.message; }
+        } catch(error) { trackUsage('share_failed'); if (preparedShareSong === song) shareStatus.textContent = error.message; }
         finally { shortenShareButton.disabled = false; }
       });
       restoreLongShareButton.addEventListener('click', () => {
@@ -2802,7 +2826,7 @@
       });
       sendShareButton.addEventListener("click", async () => {
         if (!preparedShareLink) return;
-        try { await navigator.share({ url: preparedShareLink, title: creatorNameInput.value, text: window.OtoiroSharing.withHashtags("おといろで「" + creatorNameInput.value + "」を演奏") }); }
+        try { await navigator.share({ url: preparedShareLink, title: creatorNameInput.value, text: window.OtoiroSharing.withHashtags("おといろで「" + creatorNameInput.value + "」を演奏") }); trackUsage('share_sent'); }
         catch (error) { if (error.name !== "AbortError") shareStatus.textContent = "共有できませんでした。「共有文をコピー」からSNSに貼り付けてください。"; }
       });
       downloadShareButton.addEventListener("click", async () => {
@@ -2815,6 +2839,7 @@
             if (!document.execCommand("copy")) throw new Error("copy unavailable");
           }
           shareStatus.textContent = "ハッシュタグ付きの共有文をコピーしました。SNSやメッセージに貼り付けてください。";
+          trackUsage('share_copied');
         } catch {
           shareLinkOutput.focus();
           shareLinkOutput.select();
@@ -2846,6 +2871,7 @@
             return (item[0] / 2) + "," + note.name + note.octave;
           }).join("\n");
           const parsed = parseCreatorChart(data.name, data.bpm, source, data.keySignature, data.meter);
+          trackUsage('shared_open', {source: hash.startsWith('#s=') ? 'short' : 'long', notes: parsed.steps.length});
           if (sharedSongId && !makerSongs.some(song => song.id === sharedSongId)) { delete charts[sharedSongId]; delete songNames[sharedSongId]; }
           sharedSongId = "user-link-" + Date.now() + "-" + sequence;
           charts[sharedSongId] = { bpm: parsed.bpm, steps: parsed.steps, directLanes: true, keySignature: parsed.keySignature, meter: parsed.meter };
@@ -2859,6 +2885,7 @@
         } catch (error) {
           if (sequence !== sharedLinkSequence) return;
           document.getElementById("sharedSongTitle").textContent = "共有リンクを読み込めません";
+          trackUsage('shared_failed');
           status.textContent = error.message || "リンクが途中で切れていないか確認してください。";
         }
       }

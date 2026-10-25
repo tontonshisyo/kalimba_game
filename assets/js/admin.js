@@ -43,6 +43,7 @@
     if (!session || busy) return;
     const ownRevision = revision;
     const kind = byId("adminKind").value;
+    if (kind === 'usage') { await loadUsage(); return; }
     const nextOffset = reset ? 0 : offset;
     const columns = kind === 'shared_charts' ? 'id,song,bytes,created_at,last_used_at,uses' : kind !== "beta_feedback" ? "id,title,bpm,created_at,is_visible" : "id,category,message,created_at,is_public,status,admin_reply";
     setBusy(true);
@@ -151,6 +152,44 @@
       status(rows.length ? `${offset}件を表示しています。` : nextOffset ? "すべて読み込みました。" : "データはありません。");
     } catch (error) { if (ownRevision === revision) status(error.message); }
     finally { setBusy(false); }
+  }
+  async function loadUsage(days = 30) {
+    if (!session || busy) return;
+    const ownRevision=revision;
+    setBusy(true); status('利用統計を集計しています…');
+    byId('adminMore').hidden=true;
+    try {
+      const data=await(await request('/rest/v1/rpc/usage_dashboard',{method:'POST',body:JSON.stringify({p_days:days})})).json();
+      if (ownRevision!==revision || byId('adminKind').value!=='usage') return;
+      const section=document.createElement('article');
+      const heading=document.createElement('h2'); heading.textContent='利用統計';
+      const note=document.createElement('p'); note.textContent='人数は匿名ブラウザー数の概算です。ブロック・送信OFF・通信失敗は含まれません。操作回数は成功回数と別です。共有先への投稿完了は確認できません。最大180日・10万件の記録を保持し、表示日は日本時間です。';
+      const select=document.createElement('select');select.setAttribute('aria-label','統計の期間');
+      for(const value of [7,30,90]){const option=document.createElement('option');option.value=String(value);option.textContent=`直近${value}日`;select.append(option);}select.value=String(days);select.onchange=()=>loadUsage(Number(select.value));
+      const exportButton=document.createElement('button');exportButton.textContent='集計JSONを保存';exportButton.onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='otoiro-usage-'+days+'days.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
+      section.append(heading,note,select,exportButton);
+      function table(title,columns,rows){
+        const h=document.createElement('h2');h.textContent=title;section.append(h);
+        if(!rows.length){const p=document.createElement('p');p.textContent='まだデータがありません';section.append(p);return;}
+        const wrap=document.createElement('div');wrap.style.overflowX='auto';const t=document.createElement('table');t.style.cssText='border-collapse:collapse;width:100%;font-size:14px';
+        const tr=document.createElement('tr');for(const [,label]of columns){const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:8px;text-align:left;border-bottom:1px solid #c9b89f;white-space:nowrap';tr.append(th);}t.append(tr);
+        for(const row of rows){const r=document.createElement('tr');for(const [key]of columns){const td=document.createElement('td');td.textContent=row[key]??'—';td.style.cssText='padding:8px;border-bottom:1px solid #e5d7c2';r.append(td);}t.append(r);}wrap.append(t);section.append(wrap);
+      }
+      table('期間の合計',[['visitors','利用ブラウザー'],['sessions','タブ単位の訪問'],['visits','表示回数'],['starts','演奏開始'],['finishes','完奏'],['active_minutes','表示中の分数（概算）']],[data.summary]);
+      table('日別',[['day','日付'],['visitors','利用ブラウザー'],['sessions','訪問'],['visits','表示'],['starts','開始'],['finishes','完奏']],data.daily);
+      const labels={visit:'ページ表示',engaged:'利用時間の記録',ui_click:'操作',settings_change:'設定変更',orientation:'画面回転',game_start:'演奏開始',game_finish:'完奏',game_exit:'途中終了',game_pause:'一時停止',free_start:'フリー演奏開始',free_exit:'フリー演奏終了',recording_start:'作曲録音開始',recording_end:'作曲録音終了',song_saved:'譜面保存成功',share_created:'長いURL作成成功',share_shortened:'短縮成功',share_failed:'短縮失敗',share_copied:'共有文コピー成功',share_sent:'OS共有完了',shared_open:'共有リンク読込成功',shared_failed:'共有リンク読込失敗'};
+      const modes={normal:'通常',practice:'練習',tutorial:'チュートリアル',test:'テスト',new:'新規録音',overdub:'重ね録音',free:'フリー'};
+      const features={tutorial:'チュートリアル',free_record:'フリー録音',free_replay:'録音再生',free_metronome:'メトロノーム',free_video:'動画作成',result_image:'リザルト画像',share_copy:'共有文コピー',share_send:'共有画面',sort_chart:'譜面並べ替え',preview_chart:'試聴',test_chart:'テスト演奏',load_chart:'曲読込',new_recording:'新規録音',overdub_recording:'重ね録音',save_chart:'譜面保存',tuning:'調整',display:'中央表示',note_speed:'ノーツ速度',practice_speed:'練習速度',volume:'音量',key_colors:'色設定',quantize:'クオンタイズ',meter:'拍子',signature:'調号'};
+      table('機能・操作',[['label','イベント'],['feature','機能'],['mode','モード'],['reason','結果'],['count','回数'],['visitors','利用ブラウザー']],data.features.map(row=>({...row,label:labels[row.event]||row.event,feature:features[row.feature]||row.feature,mode:modes[row.mode]||row.mode,reason:({save:'反映',discard:'破棄'})[row.reason]||row.reason})));
+      const catalog=await(await request('/rest/v1/catalog_songs?select=id,title')).json();
+      if(ownRevision!==revision || byId('adminKind').value!=='usage')return;
+      const titles=new Map(catalog.map(s=>[s.id,s.title]));
+      table('曲・モード別',[['title','曲'],['mode','モード'],['starts','開始'],['finishes','完奏'],['exits','途中終了'],['accuracy','平均正確率％'],['seconds','平均完奏秒数']],data.songs.map(row=>({...row,mode:modes[row.mode]||row.mode,title:titles.get(row.song)||(row.song==='custom'?'作成・共有曲':row.song)})));
+      table('利用環境',[['device','端末'],['orientation','向き'],['browser','ブラウザー'],['visits','表示回数']],data.environment);
+      table('短縮リンク（現在保存中の全件）',[['stored','保存数'],['uses','累計読込'],['bytes','譜面容量bytes']],[data.short_links]);
+      byId('adminItems').replaceChildren(section);status('利用統計を更新しました。');
+    } catch(error){if(ownRevision===revision)status(error.message);}
+    finally{setBusy(false);}
   }
   byId("adminLogin").addEventListener("submit", async (event) => {
     event.preventDefault();
