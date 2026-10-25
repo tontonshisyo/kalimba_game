@@ -11,6 +11,19 @@
   const list = document.getElementById("feedbackList");
   const listStatus = document.getElementById("feedbackListStatus");
   const more = document.getElementById("feedbackMore");
+  const voteControls = new Map();
+  let voter = crypto.randomUUID(), canVote = true;
+  try { voter = localStorage.getItem('otoiro-feedback-voter') || voter; localStorage.setItem('otoiro-feedback-voter', voter); }
+  catch { canVote = false; }
+  async function requestVotes(ids, id, vote) {
+    const connection=await getConfig();
+    const response=await fetch(connection.url+'/functions/v1/feedback-votes',{method:'POST',headers:{apikey:connection.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({voter,ids,...(id?{id,vote}:{})}),cache:'no-store',signal:AbortSignal.timeout(15000)});
+    if(!response.ok)throw Error(response.status===429?'操作が続いています。少し待ってお試しください。':'票を取得・更新できませんでした。一覧を更新してお試しください。');
+    return response.json();
+  }
+  function applyVotes(rows) {
+    for(const row of rows){const control=voteControls.get(row.id);if(!control)continue;control.mine=Number(row.mine);control.agree.textContent=`賛成 ${row.agree}`;control.disagree.textContent=`反対 ${row.disagree}`;control.agree.setAttribute('aria-pressed',String(control.mine===1));control.disagree.setAttribute('aria-pressed',String(control.mine===-1));control.agree.disabled=control.disagree.disabled=!canVote;}
+  }
   async function getConfig() {
     if (config) return config;
     if (!configPromise) configPromise = (async () => {
@@ -38,7 +51,7 @@
       if (!response.ok) throw new Error("一覧を読み込めませんでした。しばらくしてから「一覧を更新」を押してください。");
       const rows = await response.json();
       if (!Array.isArray(rows)) throw new Error("意見の形式が正しくありません。");
-      if (reset) list.replaceChildren();
+      if (reset) { list.replaceChildren(); voteControls.clear(); }
       for (const row of rows) {
         if (typeof row.message !== "string" || !Object.hasOwn(states, row.status)) continue;
         const article = document.createElement("article"); article.className = "feedback-entry";
@@ -46,6 +59,22 @@
         const info = document.createElement("small"); info.textContent = ` ${categories[row.category] || "意見"} · ${new Date(row.created_at).toLocaleDateString("ja-JP")}`;
         const message = document.createElement("p"); message.textContent = row.message;
         article.append(badge, info, message);
+        const votes=document.createElement('div');votes.className='feedback-votes';
+        const agree=document.createElement('button'), disagree=document.createElement('button');
+        const voteStatus=document.createElement('small');voteStatus.setAttribute('role','status');
+        const control={agree,disagree,mine:0};voteControls.set(row.id,control);
+        for(const [target,value,label]of [[agree,1,'賛成'],[disagree,-1,'反対']]){
+          target.type='button';target.className='creator-button';target.textContent=label+' …';target.disabled=true;target.setAttribute('aria-pressed','false');
+          target.addEventListener('click',async()=>{
+            if(agree.disabled||disagree.disabled)return;
+            agree.disabled=disagree.disabled=true;voteStatus.textContent='送信中…';
+            try{const result=await requestVotes([row.id],row.id,control.mine===value?0:value);if(!result.length)throw Error('この意見は公開されていません。');applyVotes(result);voteStatus.textContent=control.mine===0?'投票を取り消しました。':'投票しました。';}
+            catch(error){voteStatus.textContent=error.message;}
+            finally{agree.disabled=disagree.disabled=!canVote;}
+          });
+        }
+        if(!canVote)voteStatus.textContent='投票にはブラウザーの保存機能が必要です。';
+        votes.append(agree,disagree,voteStatus);article.append(votes);
         if (row.admin_reply) {
           const reply = document.createElement("div"); reply.className = "feedback-admin-reply";
           const title = document.createElement("strong"); title.textContent = "管理者からの返信";
@@ -57,6 +86,7 @@
       offset = nextOffset + rows.length;
       more.hidden = rows.length < 25;
       listStatus.textContent = offset ? `${offset}件の意見を表示しています。` : "公開された意見はまだありません。";
+      if(rows.length){try{applyVotes(await requestVotes(rows.map(row=>row.id)));}catch(error){listStatus.textContent+=' '+error.message;}}
     } catch (error) { listStatus.textContent = error.message; }
     finally { listBusy = false; document.getElementById("feedbackReload").disabled = false; more.disabled = false; }
   }
