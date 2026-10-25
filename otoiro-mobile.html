@@ -84,7 +84,7 @@
     .app.is-playing .game-card { position: relative; min-height: 0; flex: 1; display: flex; flex-direction: column; padding: 6px; overflow: hidden; }
     .app.is-playing .playfield { height: auto; max-height: none; min-height: 0; flex: 1; }
     .app.is-playing .field-top, .app.is-playing .track-labels { display: none; }
-    .app.is-playing .key-row { position: absolute; z-index: 5; right: 16px; bottom: 12px; left: 16px; flex: none; gap: 5px; margin: 0; padding: 6px 7px 5px; }
+    .app.is-playing .key-row { position: absolute; z-index: 5; right: 16px; bottom: 12px; left: 16px; flex: none; gap: 4px; margin: 0; padding: 6px 7px 5px; }
     .app.is-playing .key { height: calc(clamp(48px, 10vh, 76px) - var(--key-shortening, 0px)); min-height: 36px; }
     .app.is-playing .key-hit-hint { display: none; }
     .app.is-playing .game-hud { display: flex; }
@@ -304,7 +304,7 @@
     .stop-button { min-height: 44px; padding: 0 18px; border: 1px solid #a7896c; border-radius: 9px; background: rgba(251,246,235,.92); color: #60452d; font-size: 12px; font-weight: 700; cursor: pointer; }
     .stop-button:hover { background: #f4e8d4; }
 
-    .key-row { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); align-items: end; gap: 5px; padding: 8px 9px 6px; border: 1px solid #704628; border-radius: 9px; background: #815532; box-shadow: inset 0 1px rgba(255,224,180,.12), 0 3px 7px rgba(0,0,0,.2); touch-action: none; }
+    .key-row { display: grid; grid-template-columns: repeat(17, minmax(0, 1fr)); align-items: end; gap: 4px; padding: 8px 9px 6px; border: 1px solid #704628; border-radius: 9px; background: #815532; box-shadow: inset 0 1px rgba(255,224,180,.12), 0 3px 7px rgba(0,0,0,.2); touch-action: none; }
     .key {
       min-width: 0; min-height: 36px; height: calc(54px - var(--key-shortening, 0px)); border: 1px solid #887d6c; border-radius: 7px;
       background: linear-gradient(105deg, #b8ad9a 0%, #eee5d3 18%, #cfc4b1 48%, #f1e8d8 78%, #aaa08f 100%); cursor: pointer; position: relative;
@@ -450,14 +450,14 @@
       .primary-button { min-height: 44px; padding: 9px 18px; }
       .field-top { top: 7px; left: 9px; right: 9px; }
       .track-labels { bottom: 8px; }
-      .key-row { gap: 5px; padding: 5px 10px 0; }
+      .key-row { gap: 3px; padding: 5px 10px 0; }
       .key { height: calc(48px - var(--key-shortening, 0px)); min-height: 36px; border-radius: 7px; }
       .key .key-note { font-size: 10px; }
       .key .key-shortcut, .key-hit-hint, footer { display: none; }
       .app.is-playing { padding: max(4px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
       .app.is-playing .layout { grid-template-columns: minmax(0, 1fr); }
       .app.is-playing .game-card { padding: 4px; }
-      .app.is-playing .key-row { right: 16px; bottom: 8px; left: 16px; gap: 5px; padding: 5px 6px 4px; }
+      .app.is-playing .key-row { right: 16px; bottom: 8px; left: 16px; gap: 3px; padding: 5px 6px 4px; }
       .app.is-playing .key { height: calc(clamp(44px, 12vh, 72px) + 8px - var(--key-shortening, 0px)); min-height: 44px; }
       .side-column { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding-top: 0; }
       .panel { padding: 8px 11px; border-radius: 10px; }
