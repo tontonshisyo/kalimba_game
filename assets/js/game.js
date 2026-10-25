@@ -703,7 +703,11 @@
           // Otherwise a dense chord can cover or overtake the previous note.
           const availableDuration = previousStep === null ? maxArpeggioDuration
             : Math.min(maxArpeggioDuration, (step - previousStep) * 30 / bpm / 2);
-          const interval = orderedLanes.length > 1
+          // Two notes split between the thumbs are played together. The center
+          // C4 has already been assigned to the less busy, opposite hand above.
+          const isTwoHandPair = orderedLanes.length === 2
+            && hands.left.length === 1 && hands.right.length === 1;
+          const interval = isTwoHandPair ? 0 : orderedLanes.length > 1
             ? Math.min(arpeggioNoteInterval, availableDuration / (orderedLanes.length - 1))
             : 0;
           leadIn = Math.max(leadIn, interval * Math.max(0, orderedLanes.length - 1));
