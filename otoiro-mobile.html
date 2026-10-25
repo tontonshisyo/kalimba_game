@@ -2070,6 +2070,22 @@
       let practiceNote = null;
       let runTravelTime = travelTime;
       let runTempoScale = 1;
+      let runStartDelay = travelTime;
+      let preparationClicks = [];
+      let preparationClickIndex = 0;
+      function preparePlayCountIn(selectedChart) {
+        const meter = Number(selectedChart.meter);
+        const quarter = 60 / selectedChart.bpm * runTempoScale;
+        const beats = meter === 6 ? 3 : [2,3,4,5].includes(meter) ? meter : 0;
+        const positions = meter === 6 ? [0,1.5] : meter === 2 ? [0,1] : Array.from({length:Math.max(0,beats-1)},(_,i)=>i);
+        runStartDelay = Math.max(runTravelTime, beats * quarter + .08);
+        preparationClicks = positions.map(beat => runStartDelay - beats * quarter + beat * quarter);
+        preparationClickIndex = 0;
+        if (positions.length) {
+          if (!audioContext || audioContext.state === 'closed') audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === 'suspended') audioContext.resume().catch(()=>{});
+        }
+      }
       let activeNotes = [];
       let activeTimingLines = [];
       const trackUsage = (event, props) => window.OtoiroAnalytics?.track(event, props);
@@ -3902,6 +3918,11 @@
 
       function update() {
         let elapsed = ((practiceHoldAt ?? performance.now()) - startedAt) / 1000;
+        while (preparationClickIndex < preparationClicks.length && preparationClicks[preparationClickIndex] <= elapsed) {
+          const clickTime = preparationClicks[preparationClickIndex++];
+          // Skip stale clicks after a delayed frame rather than playing a burst.
+          if (elapsed - clickTime < .15) playMetronome(false);
+        }
         const nextPracticeNotes = practiceMode
           ? activeNotes.filter((note) => !note.hit && !note.missed && note.time <= elapsed)
           : [];
@@ -4196,7 +4217,7 @@
             step,
             handSide,
             handIndex,
-            time: runTravelTime + ((step - startStep) * (60 / selectedChart.bpm / 2) + offset) * runTempoScale,
+            time: runStartDelay + ((step - startStep) * (60 / selectedChart.bpm / 2) + offset) * runTempoScale,
             lane,
             spawned: false,
             hit: false,
@@ -4239,7 +4260,7 @@
           lines.push({
             beat,
             isBar: Boolean(beatsPerBar && beat % beatsPerBar === 0),
-            time: runTravelTime + (beat - startBeat) * (60 / selectedChart.bpm) * runTempoScale
+            time: runStartDelay + (beat - startBeat) * (60 / selectedChart.bpm) * runTempoScale
           });
         }
         return lines;
@@ -4414,6 +4435,7 @@
         if (startBeat === null) return;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = isTutorial ? 1 : practiceMode ? 100 / settings.practiceTempo : 1;
+        preparePlayCountIn(chart);
         activeNotes = createActiveNotes(chart, startBeat);
         activeTimingLines = createActiveTimingLines(chart, startBeat);
         beginUsageRun(isTutorial ? 'tutorial' : practiceMode ? 'practice' : 'normal');
@@ -4457,6 +4479,7 @@
         practiceMode = practiceModeInput.checked;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
+        preparePlayCountIn(chart);
         practiceHoldAt = null;
         practiceNote = null;
         isTestPlay = true;
