@@ -1614,6 +1614,12 @@
         density.className = "song-card-density";
         density.textContent = "平均 " + difficulty.average.toFixed(1) + "回/秒";
         info.append(title, meta, density);
+        if (['またあした', '故郷のメロディ'].includes(song.name)) {
+          const credit = document.createElement('span');
+          credit.className = 'song-card-density';
+          credit.textContent = 'オリジナル曲 · 作曲：とんとん';
+          info.append(credit);
+        }
         const footer = document.createElement("span");
         footer.className = "song-card-footer";
         const badge = document.createElement("span");
