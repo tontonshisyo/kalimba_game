@@ -853,6 +853,7 @@
         recordingSubdivision = Number(quantizeSetting.value);
         recordingEvents = [];
         recordingBase = base.map(([step, lane]) => ({ beat: step / 2, lane }));
+        freeNotes = [];
         recordingGuide = getArpeggiatedEvents(base, true, bpm).events.map(event => ({ ...event, time: event.step * 30 / bpm + event.offset }));
         recordingGuideCursor = 0;
         activeNotes = [];
@@ -876,6 +877,7 @@
 
       function recordKeyPress(lane) {
         if (!isRecording || performance.now() < recordingStartedAt) return;
+        freeNotes.push({lane, createdAt: performance.now()});
         playTone(lane);
         keyButtons[lane].classList.add("pressed");
         window.setTimeout(() => keyButtons[lane].classList.remove("pressed"), 105);
@@ -890,6 +892,7 @@
         if (!isRecording) return;
         trackUsage('recording_end', {reason: discard === true ? 'discard' : 'save', notes: recordingEvents.length, seconds: Number.isFinite(recordingStartedAt) ? Math.max(0, (performance.now()-recordingStartedAt)/1000) : 0});
         isRecording = false;
+        freeNotes = [];
         updateKeyLabels();
         window.clearTimeout(recordingTickTimer);
         app.classList.remove("is-playing", "is-recording");
@@ -2001,9 +2004,9 @@
           }
         }
 
-        if (state === "free") {
+        if (state === "free" || isRecording) {
           const lifetime = travelTime * 1000;
-          const replayElapsed = freeReplayStartedAt === null ? null : now - freeReplayStartedAt;
+          const replayElapsed = isRecording || freeReplayStartedAt === null ? null : now - freeReplayStartedAt;
           const visibleNotes = replayElapsed === null ? freeNotes : freeRecording.slice(freeReplayCursor).filter((event) => event.time - replayElapsed <= lifetime).map((event) => ({ lane: event.lane, createdAt: freeReplayStartedAt + event.time - lifetime, descending: true }));
           freeNotes = freeNotes.filter((note) => now - note.createdAt < lifetime);
           for (const note of visibleNotes) {
