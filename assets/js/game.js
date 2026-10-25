@@ -380,6 +380,30 @@
         return { name: title, bpm, steps: events, directLanes: true, keySignature, meter: [2,3,4,5,6].includes(Number(meter)) ? Number(meter) : null };
       }
 
+      function findAwkwardChords(events) {
+        const groups = new Map();
+        for (const [step, lane] of events) {
+          if (!groups.has(step)) groups.set(step, []);
+          groups.get(step).push(lane);
+        }
+        const warnings = [];
+        for (const [step, lanes] of groups) {
+          const left = lanes.filter(lane => notes[lane].side === "left");
+          const right = lanes.filter(lane => notes[lane].side === "right");
+          const center = lanes.find(lane => notes[lane].side === "center");
+          const gaps = hand => {
+            const sorted = [...hand].sort((a,b) => a-b);
+            return sorted.some((lane,i) => i > 0 && lane - sorted[i-1] > 1);
+          };
+          const assignments = center === undefined ? [[left,right]] : [[[...left,center],right],[left,[...right,center]]];
+          const best = assignments.sort((a,b) => a.filter(gaps).length - b.filter(gaps).length)[0];
+          for (let side = 0; side < 2; side++) {
+            if (gaps(best[side])) warnings.push({step, lanes: best[side], hand: side === 0 ? "左手" : "右手"});
+          }
+        }
+        return warnings;
+      }
+
       function renderSheetPreview() {
         invalidateShareFile();
         const svgNamespace = "http://www.w3.org/2000/svg";
@@ -390,6 +414,7 @@
           return element;
         };
         const { events, errors } = parseCreatorEvents(creatorChartInput.value, true);
+        const awkward = new Set(findAwkwardChords(events).flatMap(item => item.lanes.map(lane => `${item.step}:${lane}`)));
         const eventsByBeat = new Map();
         let lastBeat = 0;
         for (const [step, lane] of events) {
@@ -457,7 +482,7 @@
             const stepFromBottom = pitchIndex(note) - basePitch;
             const y = staffBottom - stepFromBottom * (staffGap / 2);
             const noteCircle = createSvgElement("circle", {
-              cx: x, cy: y, r: 4.5, class: "sheet-notehead"
+              cx: x, cy: y, r: 4.5, class: awkward.has(`${beat * 2}:${lane}`) ? "sheet-notehead sheet-note-awkward" : "sheet-notehead"
             });
             noteCircle.append(createSvgElement("title", {}, `${beat}拍 ${soundingNote.displayName}`));
             fragment.append(noteCircle);
@@ -1402,6 +1427,11 @@
         } catch (error) {
           showCreatorStatus(error.message, true);
           return;
+        }
+        const awkward = findAwkwardChords(validated.steps);
+        if (awkward.length) {
+          const places = awkward.map(item => `${item.step / 2}拍：${item.hand} ${item.lanes.map(lane => notes[lane].name + notes[lane].octave).join("・")}`).join("\n");
+          if (!window.confirm(`実際のカリンバでは弾きにくい箇所があります。\n同じ手の音が隣り合っていません。\n\n${places}\n\nこのまま保存しますか？（拍は0から表示）`)) return;
         }
         const song = { id, name: validated.name, bpm: validated.bpm, keySignature: validated.keySignature, source: chartToSource(validated), meter: validated.meter };
         const updatedSongs = makerSongs.filter((item) => item.id !== id);
