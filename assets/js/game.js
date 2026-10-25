@@ -2288,9 +2288,11 @@
           const next = activeNotes.find(note => !note.hit && !note.missed);
           document.getElementById("tutorialGuide").textContent = !next
             ? "演奏できました！ チュートリアルはまもなく終了します。"
-            : next.step < 12 ? "1 / 3　音符がラインに来たら、光る鍵盤を押しましょう。"
-            : next.step < 24 ? "2 / 3　和音は左右の手にかかわらず、低い音から順番に弾きます。"
-            : "3 / 3　光る鍵盤だけを押しましょう。余計な音は減点になります。";
+            : next.step === 0 ? "1 / 5　音符が下のラインに来たら、同じ音の鍵盤を弾きましょう。入力するまで待ってくれます。"
+            : next.step < 24 ? "2 / 5　左側は左手、右側は右手で。左右の親指を使って弾いてみましょう。中央のドはどちらの手でも弾けます。"
+            : next.step < 32 ? "3 / 5　線でつながった音は、中央のド → 右側のミ → ソへ、指を離さずスライドして弾きましょう。"
+            : next.step < 40 ? "4 / 5　今度は左手で、ファ → ラ → ドへスライド。和音は基本的に低い音から順番に弾きます。"
+            : "5 / 5　最後は両手で同時に！ 左手で高いド、右手で中央のドを弾きましょう。2つの音符が同じ高さで来ます。";
         }
         const lanes = new Set(getNextChord().map((note) => note.lane));
         keyButtons.forEach((button, index) => button.classList.toggle("next", lanes.has(index)));
@@ -2540,7 +2542,7 @@
       document.getElementById("tutorialButton").addEventListener("click", () => {
         if (state !== "ready" && state !== "finished") return;
         document.getElementById("tutorialTitle").textContent = "チュートリアル";
-        document.getElementById("tutorialCopy").textContent = "光る鍵盤を押して、8個の音符を演奏してみましょう。入力するまで音符が待つので、自分のペースで進められます。";
+        document.getElementById("tutorialCopy").textContent = "専用譜面で、タイミング・左右の手・スライド・両手の同時演奏を順番に練習します。入力するまで音符が待つので、自分のペースで進められます。";
         document.getElementById("beginTutorialButton").textContent = "チュートリアルを始める";
         tutorialDialog.showModal();
       });
@@ -2569,7 +2571,7 @@
         }
         if (audioContext && audioContext.state === "suspended") audioContext.resume();
         chart = charts[document.getElementById("songSelect").value];
-        if (isTutorial) chart = parseCreatorChart("チュートリアル", 80, "0,C4\n2,D4\n4,E4\n6,F4\n6,G4\n9,C4\n9,E4\n12,C4");
+        if (isTutorial) chart = parseCreatorChart("チュートリアル用", 60, "0,C4\n2,D4\n4,E4\n6,F4\n8,G4\n12,C4\n12,E4\n12,G4\n16,F4\n16,A4\n16,C5\n20,C4\n20,C5", "C", 4);
         practiceMode = isTutorial || practiceModeInput.checked;
         const startBeat = isTutorial ? 0 : practiceMode ? getStartBeat(practiceStartBeatInput, chart) : 0;
         if (startBeat === null) return;
@@ -2737,7 +2739,7 @@
           state = "paused";
           stopGame();
           document.getElementById("tutorialTitle").textContent = "チュートリアル完了！";
-          document.getElementById("tutorialCopy").textContent = "8個の音符を演奏できました。通常プレイでは音符が待たずに流れます。自分のペースで弾きたいときは、練習モードを選んでください。";
+          document.getElementById("tutorialCopy").textContent = "13個の音符を演奏できました！ 左右の手、スライド、両手の同時演奏を練習しました。通常プレイでは音符が待たずに流れます。自分のペースで弾きたいときは練習モードを選んでください。";
           document.getElementById("beginTutorialButton").textContent = "もう一度練習する";
           tutorialDialog.showModal();
           return;
