@@ -294,6 +294,9 @@
       let recordingBeatDuration = 0;
       let recordingSubdivision = 2;
       let recordingEvents = [];
+      let recordingGuide = [];
+      let recordingBase = [];
+      let recordingGuideCursor = 0;
       let recordingTickTimer = 0;
       let startedAt = 0;
       let pausedAt = 0;
@@ -769,7 +772,7 @@
         }, Math.max(0, deadline - performance.now()));
       }
 
-      function startRecording(prepared = false) {
+      function startRecording(prepared = false, overdub = false) {
         if (isRecording || state === "playing" || state === "paused" || state === "free") return;
         const title = creatorNameInput.value.trim();
         const bpm = Number(creatorBpmInput.value);
@@ -781,7 +784,13 @@
           showCreatorStatus("BPMは30〜240の整数で入力してください。", true);
           return;
         }
-        if (prepared !== true) { showRecordingReady(() => startRecording(true), bpm); return; }
+        let base = [];
+        if (overdub) {
+          try {
+            base = parseCreatorChart(title, bpm, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value).steps;
+          } catch (error) { showCreatorStatus(error.message, true); return; }
+        }
+        if (prepared !== true) { showRecordingReady(() => startRecording(true, overdub), bpm); return; }
         stopPreview();
         prepareRecordingAudio();
         isRecording = true;
@@ -790,8 +799,14 @@
         recordingBeatDuration = 60000 / bpm;
         recordingSubdivision = Number(quantizeSetting.value);
         recordingEvents = [];
+        recordingBase = base.map(([step, lane]) => ({ beat: step / 2, lane }));
+        recordingGuide = getArpeggiatedEvents(base, true, bpm).events.map(event => ({ ...event, time: event.step * 30 / bpm + event.offset }));
+        recordingGuideCursor = 0;
+        activeNotes = [];
+        activeTimingLines = [];
         startRecordingButton.hidden = true;
         stopRecordingButton.hidden = false;
+        document.getElementById("discardRecordingButton").hidden = false;
         selectionControls.forEach((control) => { control.disabled = true; });
         app.classList.add("is-playing", "is-recording");
         recordingIndicator.hidden = false;
@@ -801,7 +816,9 @@
         document.getElementById("gameStatus").textContent = "RECORDING";
         overlay.classList.add("hidden");
         resizeCanvas();
-        scheduleRecordingBeat(0, performance.now() + 60);
+        const countInStart = performance.now() + 60;
+        recordingStartedAt = countInStart + recordingBeatDuration * 4;
+        scheduleRecordingBeat(0, countInStart);
       }
 
       function recordKeyPress(lane) {
@@ -816,7 +833,7 @@
         }
       }
 
-      function stopRecording() {
+      function stopRecording(discard = false) {
         if (!isRecording) return;
         isRecording = false;
         updateKeyLabels();
@@ -826,6 +843,7 @@
         document.getElementById("recordingCountdown").hidden = true;
         startRecordingButton.hidden = false;
         stopRecordingButton.hidden = true;
+        document.getElementById("discardRecordingButton").hidden = true;
         document.getElementById("gameStatus").textContent = "待機中";
         document.getElementById("overlayTitle").textContent = "録音を終了しました";
         document.getElementById("overlayCopy").textContent = "譜面を確認して、保存またはもう一度録音してください。";
@@ -833,10 +851,21 @@
         overlay.classList.remove("hidden");
         selectionControls.forEach((control) => { control.disabled = false; });
         resizeCanvas();
+        if (discard === true) {
+          recordingEvents = [];
+          recordingGuide = [];
+          recordingBase = [];
+          document.getElementById("overlayTitle").textContent = "録音を取り消しました";
+          showCreatorStatus("今回の録音は反映していません。元の譜面を保持しています。");
+          return;
+        }
         if (!recordingEvents.length) {
           showCreatorStatus("録音した音がありません。譜面欄は変更していません。");
           return;
         }
+        const combined = new Map();
+        for (const event of [...recordingBase, ...recordingEvents]) combined.set(`${event.beat}:${event.lane}`, event);
+        recordingEvents = [...combined.values()];
         recordingEvents.sort((a, b) => a.beat - b.beat || a.lane - b.lane);
         creatorChartInput.value = recordingEvents
           .map(({ beat, lane }) => `${Number(beat.toFixed(4))},${notes[lane].name}${notes[lane].octave}`)
@@ -1802,6 +1831,7 @@
         };
       }
 
+
       function draw(now) {
         const width = playfield.clientWidth;
         const height = playfield.clientHeight;
@@ -1809,6 +1839,27 @@
         const renderTime = state === "paused" ? pausedAt : practiceHoldAt ?? now;
         ctx.clearRect(0, 0, width, height);
         const geometry = getGeometry();
+        if (isRecording && Number.isFinite(recordingStartedAt)) {
+          const elapsed = (now - recordingStartedAt) / 1000;
+          while (recordingGuideCursor < recordingGuide.length && recordingGuide[recordingGuideCursor].time <= elapsed) {
+            playTone(recordingGuide[recordingGuideCursor++].lane, creatorKeySignatureInput.value);
+          }
+          ctx.save();
+          ctx.globalAlpha = .3;
+          for (const note of recordingGuide) {
+            const remaining = note.time - elapsed;
+            if (remaining < 0 || remaining > travelTime) continue;
+            const depth = 1 - remaining / travelTime;
+            const { x, y } = geometry.lanePoint(note.lane, depth);
+            const bounds = geometry.laneBounds(note.lane, 1 - depth);
+            const radius = Math.max(3, (bounds.right - bounds.left) * .44);
+            ctx.beginPath();
+            ctx.ellipse(x, y, radius, radius * .48, 0, 0, Math.PI * 2);
+            ctx.fillStyle = notes[note.lane].color;
+            ctx.fill();
+          }
+          ctx.restore();
+        }
 
         for (let i = 0; i < laneCount; i++) {
           const bottom = geometry.laneBounds(i, 0);
@@ -2835,7 +2886,11 @@
       stopPreviewButton.addEventListener("click", () => stopPreview(true));
       testPlayButton.addEventListener("click", startTestPlay);
       startRecordingButton.addEventListener("click", startRecording);
+      document.getElementById("overdubRecordingButton").addEventListener("click", () => startRecording(false, true));
       stopRecordingButton.addEventListener("click", stopRecording);
+      document.getElementById("discardRecordingButton").addEventListener("click", () => {
+        if (isRecording && window.confirm("今回の録音を反映せず終了しますか？元の譜面はそのまま残ります。")) stopRecording(true);
+      });
       exportChartsButton.addEventListener("click", exportCreatorSongs);
       if (exportMobileAppButton) exportMobileAppButton.addEventListener("click", exportPortableApp);
       importChartsButton.addEventListener("click", () => importChartsFile.click());

@@ -123,6 +123,7 @@
               <button class="pause-button" id="pauseButton" type="button" aria-label="演奏を一時停止">一時停止</button>
               <button class="pause-button free-play-exit" id="exitFreePlayButton" type="button">ホームへ</button>
               <button class="stop-recording-button" id="stopRecordingButton" type="button" hidden>録音を止める</button>
+              <button class="stop-recording-button" id="discardRecordingButton" type="button" hidden>反映しない</button>
             </div>
             <div class="recording-indicator" id="recordingIndicator" hidden></div>
             <div class="recording-countdown" id="recordingCountdown" role="status" aria-live="polite" hidden></div>
@@ -318,7 +319,7 @@
             <p class="chart-help portable-export-help">PCからスマホへアプリを渡す場合は「スマホ用アプリを書き出す」を押します。できたHTMLファイルをスマホへ送り、スマホのブラウザーで開くと、PCのサーバーなしで遊べます。書き出し時点の曲も含まれます。</p>
             <section class="recording-panel" aria-label="鍵盤入力で譜面を録音">
               <h3>鍵盤で録音</h3>
-              <p>横画面で準備し、「録音開始」を押すと4・3・2・1の後に録音します。メトロノームは録音終了まで同じ強さで毎拍鳴ります。録音を止めると、今の譜面欄を録音内容に置き換えます。</p>
+              <p>4・3・2・1の後に録音します。メトロノームは録音終了まで鳴ります。「新しく録音」は譜面を置き換え、「今の譜面に重ねて録音」は既存の音と薄いノーツに合わせて音を追加できます。同じ拍の同じ音は重複しません。</p>
               <label for="quantizeSetting">クオンタイズ
                 <select id="quantizeSetting">
                   <option value="1">4分音符</option>
@@ -327,7 +328,8 @@
                 </select>
               </label>
               <div class="creator-actions">
-                <button class="creator-button creator-button-primary" id="startRecordingButton" type="button">録音の準備</button>
+                <button class="creator-button creator-button-primary" id="startRecordingButton" type="button">新しく録音</button>
+                <button class="creator-button" id="overdubRecordingButton" type="button">今の譜面に重ねて録音</button>
               </div>
             </section>
             <p class="creator-status" id="creatorStatus" role="status" aria-live="polite"></p>
