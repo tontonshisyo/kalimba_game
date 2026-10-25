@@ -49,7 +49,8 @@
     setBusy(true);
     status("読み込んでいます…");
     try {
-      const response = await request(`/rest/v1/${kind}?select=${columns}&order=created_at.desc,id.desc&limit=50&offset=${nextOffset}`);
+      const order = kind === 'catalog_songs' ? 'sort_order.asc,created_at.asc,id.asc' : 'created_at.desc,id.desc';
+      const response = await request(`/rest/v1/${kind}?select=${columns}&order=${order}&limit=50&offset=${nextOffset}`);
       const rows = await response.json();
       if (ownRevision !== revision) return;
       if (!Array.isArray(rows)) throw new Error("一覧の形式が正しくありません。");
@@ -101,6 +102,19 @@
           const toggle = document.createElement('button'); toggle.textContent = row.is_visible ? '非公開にする' : '公開する';
           toggle.onclick = async () => { if(busy)return; if(!confirm(`${row.title}を${row.is_visible?'非公開':'公開'}にしますか？`))return; setBusy(true); try { const result=await request(`/rest/v1/catalog_songs?id=eq.${encodeURIComponent(row.id)}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({is_visible:!row.is_visible})});const updated=await result.json();if(updated.length!==1)throw Error('更新できませんでした');setBusy(false);await loadItems(true); }catch(e){status(e.message)}finally{setBusy(false)} };
           article.append(toggle, remove);
+          for (const [direction,label] of [[-1,'上へ'],[1,'下へ']]) {
+            const move=document.createElement('button');move.type='button';move.textContent=label;move.setAttribute('aria-label',row.title+'を'+label);
+            move.addEventListener('click',async()=>{
+              if(busy||!session)return;
+              const ownRevision=revision;let moved=null;
+              setBusy(true);
+              try{moved=await(await request('/rest/v1/rpc/move_catalog_song',{method:'POST',body:JSON.stringify({p_id:row.id,p_direction:direction})})).json();}
+              catch(error){if(ownRevision===revision)status(error.message);}
+              finally{setBusy(false);}
+              if(ownRevision===revision&&session&&moved!==null){await loadItems(true);status(moved?'曲順を保存しました。ゲームを再読み込みすると反映されます。':'先頭または末尾です。');}
+            });
+            article.append(move);
+          }
         }
         if (kind === "beta_feedback") {
           const visibility = document.createElement("p");

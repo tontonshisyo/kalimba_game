@@ -1997,6 +1997,10 @@
       const songNames = { ...builtInSongNames };
       let makerSongs = [];
       let catalogVisibleIds = null;
+      let catalogOrder = new Map();
+      function orderedSongEntries() {
+        return Object.entries(songNames).sort(([a],[b]) => (catalogOrder.get(a) ?? Infinity) - (catalogOrder.get(b) ?? Infinity));
+      }
       let projectDirectoryHandle = null;
       let projectSaveQueue = Promise.resolve();
       const canvas = document.getElementById("gameCanvas");
@@ -3107,10 +3111,11 @@
           let pack = await response.json();
           try {
             const config = await (await fetch('./assets/data/community-config.json', {cache:'no-store'})).json();
-            const catalog = await fetch(`${config.url}/rest/v1/catalog_songs?select=id,title,bpm,source,key_signature,meter&order=created_at.asc`, {headers:{apikey:config.publishableKey},cache:'no-store',signal:AbortSignal.timeout(8000)});
+            const catalog = await fetch(`${config.url}/rest/v1/catalog_songs?select=id,title,bpm,source,key_signature,meter&order=sort_order.asc,created_at.asc,id.asc`, {headers:{apikey:config.publishableKey},cache:'no-store',signal:AbortSignal.timeout(8000)});
             if (!catalog.ok) throw new Error('catalog unavailable');
             const rows = await catalog.json();
             catalogVisibleIds = new Set(rows.map(s=>s.id));
+            catalogOrder = new Map(rows.map((song,index)=>[song.id,index]));
             pack = {format:'otoiro-chart-pack',version:1,updatedAt:new Date().toISOString(),songs:rows.map(s=>({id:s.id,name:s.title,bpm:s.bpm,source:s.source,keySignature:s.key_signature,meter:s.meter}))};
           } catch (error) { console.warn('収録曲は保存済みの一覧を使用します。',error); }
           restoredSongs = validateChartPack(pack, true);
@@ -3264,7 +3269,7 @@
 
       function refreshSongOptions(selectedId = songSelect.value) {
         songSelect.replaceChildren();
-        for (const [id, name] of Object.entries(songNames)) {
+        for (const [id, name] of orderedSongEntries()) {
           const option = document.createElement("option");
           option.value = id;
           option.textContent = name;
@@ -3377,7 +3382,7 @@
 
       songLibrary = window.OtoiroSongLibrary?.mount({
         select: songSelect,
-        getSongs: () => Object.entries(songNames).map(([id, name]) => ({ id, name: name.replace(/ — やさしい$/, ""), chart: charts[id] }))
+        getSongs: () => orderedSongEntries().map(([id, name]) => ({ id, name: name.replace(/ — やさしい$/, ""), chart: charts[id] }))
       });
       restoreMakerSongs();
       loadSelectedSongIntoEditor();
