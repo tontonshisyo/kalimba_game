@@ -960,13 +960,15 @@
             <div class="chart-sharing" aria-label="曲の共有">
               <div class="creator-actions">
                 <button class="creator-button creator-button-primary" id="prepareShareButton" type="button">共有リンクを作成</button>
+                <button class="creator-button" id="shortenShareButton" type="button" hidden>URLを短縮</button>
+                <button class="creator-button" id="restoreLongShareButton" type="button" hidden>長いURLに戻す</button>
                 <button class="creator-button" id="sendShareButton" type="button" hidden>SNSなどに共有</button>
                 <button class="creator-button" id="downloadShareButton" type="button" hidden>共有文をコピー</button>
                 <input id="importShareFile" type="file" accept=".otoiro,.json,application/json,application/octet-stream" hidden>
               </div>
               <textarea id="shareLinkOutput" class="share-link-output" rows="3" readonly aria-label="ハッシュタグ付きSNS投稿用の共有文" hidden></textarea>
               <p class="chart-help">共有文には「#おといろ」「#カリンバ」「#音ゲー」が入ります。</p>
-            <p class="chart-help">譜面を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。</p>
+            <p class="chart-help">通常は譜面をリンクに含めます。「URLを短縮」を押した場合だけサーバーへ保存します（同じ接続元から3分に1回）。曲一覧には掲載されません。容量整理で短縮リンクが削除される場合があるため、元の長いURLも保管してください。</p>
               <details><summary>以前の共有ファイルを読み込む</summary><button class="creator-button" id="importShareButton" type="button">ファイルを選択</button></details>
               <p id="shareStatus" class="chart-help" role="status" aria-live="polite"></p>
             </div>
@@ -1252,6 +1254,11 @@
     return link;
   }
   async function readLink(hash) {
+    if (/^#s=[a-f0-9]{24}$/.test(hash)) {
+      const result = await shortRequest('?id=' + hash.slice(3));
+      toCatalogSong(result.song);
+      return result.song;
+    }
     const match = /^#song=1([bgjz])\.([A-Za-z0-9_-]+)$/.exec(hash);
     if (!match || hash.length > 8000) throw new Error("共有リンクが正しくありません。末尾までコピーされているか確認してください。");
     let bytes = Uint8Array.from(atob(match[2].replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -1285,7 +1292,26 @@
     const source = steps.map(([step,lane])=>`${step / 2},${lanes[lane]}`).join('\n');
     return {title,bpm:song.bpm,key_signature:key,meter,source};
   }
-  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, toCatalogSong, publicBaseURL, withHashtags });
+  async function shortRequest(query = '', song) {
+    const base = publicBaseURL();
+    const configResponse = await fetch(new URL('assets/data/community-config.json', base), {cache:'no-store'});
+    if (!configResponse.ok) throw Error('接続設定を読み込めません。長いURLをご利用ください。');
+    const config = await configResponse.json();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)) throw Error('接続設定が正しくありません。');
+    const response = await fetch(config.url + '/functions/v1/short-links' + query, {
+      method: song ? 'POST' : 'GET', headers:{apikey:config.publishableKey,'Content-Type':'application/json'},
+      ...(song ? {body:JSON.stringify(song)} : {}), signal:AbortSignal.timeout(20000), cache:'no-store'
+    });
+    if (!response.ok) throw Error(response.status===429 ? '短縮は3分に1回です。少し待つか長いURLをご利用ください。' : response.status===404 ? 'この短縮リンクは整理・削除されたか、存在しません。共有した方に長いURLを確認してください。' : '短縮リンクを処理できません。曲の容量・密度や接続をご確認ください。長いURLは引き続き使えます。');
+    return response.json();
+  }
+  async function shorten(song) {
+    toCatalogSong(song);
+    const {id} = await shortRequest('', song);
+    if (!/^[a-f0-9]{24}$/.test(id)) throw Error('短縮結果を確認できません。');
+    return publicBaseURL() + '#s=' + id;
+  }
+  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, shorten, toCatalogSong, publicBaseURL, withHashtags });
 })();
 
 (() => {
@@ -4575,9 +4601,17 @@
       const downloadShareButton = document.getElementById("downloadShareButton");
       const shareStatus = document.getElementById("shareStatus");
       const shareLinkOutput = document.getElementById("shareLinkOutput");
+      const shortenShareButton = document.getElementById('shortenShareButton');
+      const restoreLongShareButton = document.getElementById('restoreLongShareButton');
+      let originalShareLink = null;
+      let preparedShareSong = null;
       function invalidateShareFile() {
         if (!preparedShareLink) return;
         preparedShareLink = null;
+        originalShareLink = null;
+        preparedShareSong = null;
+        shortenShareButton.hidden = true;
+        restoreLongShareButton.hidden = true;
         sendShareButton.hidden = true;
         downloadShareButton.hidden = true;
         shareLinkOutput.hidden = true;
@@ -4598,6 +4632,9 @@
           const link = await window.OtoiroSharing.createLink(parsed);
           if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
           preparedShareLink = link;
+          originalShareLink = link;
+          preparedShareSong = parsed;
+          shortenShareButton.hidden = false;
           shareLinkOutput.value = songShareText(parsed.name, link);
           shareLinkOutput.hidden = false;
           downloadShareButton.hidden = false;
@@ -4605,6 +4642,30 @@
           shareStatus.textContent = "ハッシュタグ付きの共有文をコピーするか、共有先を選んで投稿してください。" + (link.length > 2000 ? " リンクが長めです。末尾まで含まれていることを確認してください。" : "");
         } catch (error) { shareStatus.textContent = error.message; }
         finally { prepareShareButton.disabled = false; }
+      });
+      shortenShareButton.addEventListener('click', async () => {
+        if (!preparedShareSong || shortenShareButton.disabled) return;
+        const song = preparedShareSong;
+        shortenShareButton.disabled = true;
+        shareStatus.textContent = '譜面を保存してURLを短縮しています…';
+        try {
+          const link = await window.OtoiroSharing.shorten(song);
+          if (preparedShareSong !== song) return;
+          preparedShareLink = link;
+          shareLinkOutput.value = songShareText(song.name, link);
+          shortenShareButton.hidden = true;
+          restoreLongShareButton.hidden = false;
+          shareStatus.textContent = '短縮しました。容量整理で削除される場合があるため、長いURLも保管してください。';
+        } catch(error) { if (preparedShareSong === song) shareStatus.textContent = error.message; }
+        finally { shortenShareButton.disabled = false; }
+      });
+      restoreLongShareButton.addEventListener('click', () => {
+        if (!originalShareLink || !preparedShareSong) return;
+        preparedShareLink = originalShareLink;
+        shareLinkOutput.value = songShareText(preparedShareSong.name, originalShareLink);
+        restoreLongShareButton.hidden = true;
+        shortenShareButton.hidden = false;
+        shareStatus.textContent = 'サーバーに依存しない長いURLに戻しました。';
       });
       sendShareButton.addEventListener("click", async () => {
         if (!preparedShareLink) return;
@@ -4631,7 +4692,7 @@
       let sharedSongId = null;
       let sharedLinkSequence = 0;
       async function loadSharedSong() {
-        if (!location.hash.startsWith("#song=") || !["ready", "finished"].includes(state)) return;
+        if (!(location.hash.startsWith("#song=") || location.hash.startsWith("#s=")) || !["ready", "finished"].includes(state)) return;
         const sequence = ++sharedLinkSequence;
         const hash = location.hash;
         const panel = document.getElementById("sharedSongPanel");
@@ -4662,10 +4723,10 @@
           status.textContent = "この曲を演奏できます。あとで演奏する場合は「この端末に保存」を押してください。";
           play.hidden = false;
           save.hidden = false;
-        } catch {
+        } catch (error) {
           if (sequence !== sharedLinkSequence) return;
           document.getElementById("sharedSongTitle").textContent = "共有リンクを読み込めません";
-          status.textContent = "リンクが途中で切れていないか確認してください。";
+          status.textContent = error.message || "リンクが途中で切れていないか確認してください。";
         }
       }
       document.getElementById("playSharedSongButton").addEventListener("click", startGame);

@@ -2734,9 +2734,17 @@
       const downloadShareButton = document.getElementById("downloadShareButton");
       const shareStatus = document.getElementById("shareStatus");
       const shareLinkOutput = document.getElementById("shareLinkOutput");
+      const shortenShareButton = document.getElementById('shortenShareButton');
+      const restoreLongShareButton = document.getElementById('restoreLongShareButton');
+      let originalShareLink = null;
+      let preparedShareSong = null;
       function invalidateShareFile() {
         if (!preparedShareLink) return;
         preparedShareLink = null;
+        originalShareLink = null;
+        preparedShareSong = null;
+        shortenShareButton.hidden = true;
+        restoreLongShareButton.hidden = true;
         sendShareButton.hidden = true;
         downloadShareButton.hidden = true;
         shareLinkOutput.hidden = true;
@@ -2757,6 +2765,9 @@
           const link = await window.OtoiroSharing.createLink(parsed);
           if (snapshot !== [creatorNameInput.value, creatorBpmInput.value, creatorChartInput.value, creatorKeySignatureInput.value, creatorMeterInput.value].join("\n")) throw new Error("曲が変更されました。共有リンクを作り直してください。");
           preparedShareLink = link;
+          originalShareLink = link;
+          preparedShareSong = parsed;
+          shortenShareButton.hidden = false;
           shareLinkOutput.value = songShareText(parsed.name, link);
           shareLinkOutput.hidden = false;
           downloadShareButton.hidden = false;
@@ -2764,6 +2775,30 @@
           shareStatus.textContent = "ハッシュタグ付きの共有文をコピーするか、共有先を選んで投稿してください。" + (link.length > 2000 ? " リンクが長めです。末尾まで含まれていることを確認してください。" : "");
         } catch (error) { shareStatus.textContent = error.message; }
         finally { prepareShareButton.disabled = false; }
+      });
+      shortenShareButton.addEventListener('click', async () => {
+        if (!preparedShareSong || shortenShareButton.disabled) return;
+        const song = preparedShareSong;
+        shortenShareButton.disabled = true;
+        shareStatus.textContent = '譜面を保存してURLを短縮しています…';
+        try {
+          const link = await window.OtoiroSharing.shorten(song);
+          if (preparedShareSong !== song) return;
+          preparedShareLink = link;
+          shareLinkOutput.value = songShareText(song.name, link);
+          shortenShareButton.hidden = true;
+          restoreLongShareButton.hidden = false;
+          shareStatus.textContent = '短縮しました。容量整理で削除される場合があるため、長いURLも保管してください。';
+        } catch(error) { if (preparedShareSong === song) shareStatus.textContent = error.message; }
+        finally { shortenShareButton.disabled = false; }
+      });
+      restoreLongShareButton.addEventListener('click', () => {
+        if (!originalShareLink || !preparedShareSong) return;
+        preparedShareLink = originalShareLink;
+        shareLinkOutput.value = songShareText(preparedShareSong.name, originalShareLink);
+        restoreLongShareButton.hidden = true;
+        shortenShareButton.hidden = false;
+        shareStatus.textContent = 'サーバーに依存しない長いURLに戻しました。';
       });
       sendShareButton.addEventListener("click", async () => {
         if (!preparedShareLink) return;
@@ -2790,7 +2825,7 @@
       let sharedSongId = null;
       let sharedLinkSequence = 0;
       async function loadSharedSong() {
-        if (!location.hash.startsWith("#song=") || !["ready", "finished"].includes(state)) return;
+        if (!(location.hash.startsWith("#song=") || location.hash.startsWith("#s=")) || !["ready", "finished"].includes(state)) return;
         const sequence = ++sharedLinkSequence;
         const hash = location.hash;
         const panel = document.getElementById("sharedSongPanel");
@@ -2821,10 +2856,10 @@
           status.textContent = "この曲を演奏できます。あとで演奏する場合は「この端末に保存」を押してください。";
           play.hidden = false;
           save.hidden = false;
-        } catch {
+        } catch (error) {
           if (sequence !== sharedLinkSequence) return;
           document.getElementById("sharedSongTitle").textContent = "共有リンクを読み込めません";
-          status.textContent = "リンクが途中で切れていないか確認してください。";
+          status.textContent = error.message || "リンクが途中で切れていないか確認してください。";
         }
       }
       document.getElementById("playSharedSongButton").addEventListener("click", startGame);

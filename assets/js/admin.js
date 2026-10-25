@@ -44,7 +44,7 @@
     const ownRevision = revision;
     const kind = byId("adminKind").value;
     const nextOffset = reset ? 0 : offset;
-    const columns = kind !== "beta_feedback" ? "id,title,bpm,created_at,is_visible" : "id,category,message,created_at,is_public,status,admin_reply";
+    const columns = kind === 'shared_charts' ? 'id,song,bytes,created_at,last_used_at,uses' : kind !== "beta_feedback" ? "id,title,bpm,created_at,is_visible" : "id,category,message,created_at,is_public,status,admin_reply";
     setBusy(true);
     status("読み込んでいます…");
     try {
@@ -55,6 +55,19 @@
       if (reset) byId("adminItems").replaceChildren();
       for (const row of rows) {
         const article = document.createElement("article");
+        if (kind === 'shared_charts') {
+          const song = row.song;
+          const normalized = window.OtoiroSharing.toCatalogSong(song);
+          const heading = document.createElement('h2'); heading.textContent = normalized.title;
+          const meta = document.createElement('p');
+          meta.textContent = `BPM ${normalized.bpm} · 調号 ${normalized.key_signature} · ${normalized.meter === null ? '拍子なし' : normalized.meter === 6 ? '6/8' : normalized.meter + '/4'} · ${song.steps.length}音 · ${row.bytes} bytes\n登録：${new Date(row.created_at).toLocaleString('ja-JP')}\n最終利用：${new Date(row.last_used_at).toLocaleString('ja-JP')} · ${row.uses}回`;
+          const link = document.createElement('a'); link.href = window.OtoiroSharing.publicBaseURL() + '#s=' + row.id; link.textContent = '短縮リンクで開く'; link.target = '_blank'; link.rel = 'noopener';
+          const details = document.createElement('details');
+          const summary = document.createElement('summary'); summary.textContent = '譜面の内容（拍・音名）';
+          const source = document.createElement('textarea'); source.readOnly = true; source.value = normalized.source; source.setAttribute('aria-label', normalized.title + 'の譜面');
+          details.append(summary, source); article.append(heading, meta, link, details); byId('adminItems').append(article);
+          continue;
+        }
         const heading = document.createElement("h2");
         heading.textContent = kind !== "beta_feedback" ? row.title : (row.is_public ? '公開の意見' : '非公開のお問い合わせ');
         const body = document.createElement("p");

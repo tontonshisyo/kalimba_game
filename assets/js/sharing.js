@@ -145,6 +145,11 @@
     return link;
   }
   async function readLink(hash) {
+    if (/^#s=[a-f0-9]{24}$/.test(hash)) {
+      const result = await shortRequest('?id=' + hash.slice(3));
+      toCatalogSong(result.song);
+      return result.song;
+    }
     const match = /^#song=1([bgjz])\.([A-Za-z0-9_-]+)$/.exec(hash);
     if (!match || hash.length > 8000) throw new Error("共有リンクが正しくありません。末尾までコピーされているか確認してください。");
     let bytes = Uint8Array.from(atob(match[2].replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -178,5 +183,24 @@
     const source = steps.map(([step,lane])=>`${step / 2},${lanes[lane]}`).join('\n');
     return {title,bpm:song.bpm,key_signature:key,meter,source};
   }
-  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, toCatalogSong, publicBaseURL, withHashtags });
+  async function shortRequest(query = '', song) {
+    const base = publicBaseURL();
+    const configResponse = await fetch(new URL('assets/data/community-config.json', base), {cache:'no-store'});
+    if (!configResponse.ok) throw Error('接続設定を読み込めません。長いURLをご利用ください。');
+    const config = await configResponse.json();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)) throw Error('接続設定が正しくありません。');
+    const response = await fetch(config.url + '/functions/v1/short-links' + query, {
+      method: song ? 'POST' : 'GET', headers:{apikey:config.publishableKey,'Content-Type':'application/json'},
+      ...(song ? {body:JSON.stringify(song)} : {}), signal:AbortSignal.timeout(20000), cache:'no-store'
+    });
+    if (!response.ok) throw Error(response.status===429 ? '短縮は3分に1回です。少し待つか長いURLをご利用ください。' : response.status===404 ? 'この短縮リンクは整理・削除されたか、存在しません。共有した方に長いURLを確認してください。' : '短縮リンクを処理できません。曲の容量・密度や接続をご確認ください。長いURLは引き続き使えます。');
+    return response.json();
+  }
+  async function shorten(song) {
+    toCatalogSong(song);
+    const {id} = await shortRequest('', song);
+    if (!/^[a-f0-9]{24}$/.test(id)) throw Error('短縮結果を確認できません。');
+    return publicBaseURL() + '#s=' + id;
+  }
+  window.OtoiroSharing = Object.freeze({ encode, decode, download, createLink, readLink, shorten, toCatalogSong, publicBaseURL, withHashtags });
 })();

@@ -249,13 +249,15 @@
             <div class="chart-sharing" aria-label="曲の共有">
               <div class="creator-actions">
                 <button class="creator-button creator-button-primary" id="prepareShareButton" type="button">共有リンクを作成</button>
+                <button class="creator-button" id="shortenShareButton" type="button" hidden>URLを短縮</button>
+                <button class="creator-button" id="restoreLongShareButton" type="button" hidden>長いURLに戻す</button>
                 <button class="creator-button" id="sendShareButton" type="button" hidden>SNSなどに共有</button>
                 <button class="creator-button" id="downloadShareButton" type="button" hidden>共有文をコピー</button>
                 <input id="importShareFile" type="file" accept=".otoiro,.json,application/json,application/octet-stream" hidden>
               </div>
               <textarea id="shareLinkOutput" class="share-link-output" rows="3" readonly aria-label="ハッシュタグ付きSNS投稿用の共有文" hidden></textarea>
               <p class="chart-help">共有文には「#おといろ」「#カリンバ」「#音ゲー」が入ります。</p>
-            <p class="chart-help">譜面を圧縮してリンクに含めます。曲のサーバー投稿は行いません。リンクを知っている人が演奏できます。</p>
+            <p class="chart-help">通常は譜面をリンクに含めます。「URLを短縮」を押した場合だけサーバーへ保存します（同じ接続元から3分に1回）。曲一覧には掲載されません。容量整理で短縮リンクが削除される場合があるため、元の長いURLも保管してください。</p>
               <details><summary>以前の共有ファイルを読み込む</summary><button class="creator-button" id="importShareButton" type="button">ファイルを選択</button></details>
               <p id="shareStatus" class="chart-help" role="status" aria-live="polite"></p>
             </div>
