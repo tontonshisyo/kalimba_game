@@ -248,6 +248,8 @@
     .pause-button:active { background: #5a3b26; border-color: var(--gold); }
     .stop-recording-button { min-height: 44px; padding: 0 14px; border: 1px solid #d9a463; border-radius: 9px; background: rgba(42,34,27,.94); color: #f8edda; font-size: 12px; font-weight: 700; pointer-events: auto; touch-action: manipulation; }
     .app.is-recording .hud-combo, .app.is-recording .pause-button { display: none; }
+    .app.is-auto .hud-combo { display: none; }
+    .app.is-auto .game-hud { justify-content: flex-end; }
     .app.is-recording .game-hud { flex-direction: column; align-items: flex-end; gap: 7px; }
     .app.is-recording .stop-recording-button { width: 126px; }
     .app.is-recording .recording-indicator { left: 12px; right: 150px; max-width: none; transform: none; }

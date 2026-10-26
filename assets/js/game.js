@@ -149,6 +149,14 @@
       });
       updateFreeDisplay();
       const practiceModeInput = document.getElementById("practiceMode");
+      const autoModeInput = document.getElementById('autoMode');
+      autoModeInput.addEventListener('change', () => {
+        if (autoModeInput.checked && practiceModeInput.checked) {
+          practiceModeInput.checked = false;
+          practiceModeInput.dispatchEvent(new Event('change'));
+        }
+      });
+      practiceModeInput.addEventListener('change', () => { if (practiceModeInput.checked) autoModeInput.checked = false; });
       const settingInputs = {
         volume: document.getElementById("volumeSetting"),
         noteSpeed: document.getElementById("noteSpeedSetting"),
@@ -202,6 +210,7 @@
       let kalimbaAudio = null;
       let chart = charts.twinkle;
       let practiceMode = false;
+      let autoMode = false;
       let practiceHoldAt = null;
       let practiceNote = null;
       let runTravelTime = travelTime;
@@ -1987,6 +1996,18 @@
           ctx.fill();
           ctx.shadowBlur = 0;
 
+          // Exact note-center positions at the judgement line.
+          for (let lane = 0; lane < laneCount; lane++) {
+            const {x,y} = geometry.lanePoint(lane,1);
+            const bounds = geometry.laneBounds(lane,0);
+            const radiusX = Math.max(3,(bounds.right-bounds.left)*.44);
+            ctx.save();
+            ctx.beginPath();ctx.ellipse(x,y,radiusX,radiusX*.48,0,0,Math.PI*2);
+            ctx.fillStyle='rgba(255,239,203,.10)';ctx.fill();
+            ctx.strokeStyle='rgba(255,239,203,.65)';ctx.lineWidth=1.5;ctx.stroke();
+            ctx.restore();
+          }
+
           drawSlideConnections(geometry, (renderTime - startedAt) / 1000);
           for (const note of activeNotes) {
             if (!note.spawned || note.hit || note.missed) continue;
@@ -2076,6 +2097,14 @@
         }
         for (const note of activeNotes) {
           if (!note.spawned && elapsed >= note.time - runTravelTime) note.spawned = true;
+          if (autoMode && !note.hit && !note.missed && elapsed >= note.time) {
+            note.hit = true;
+            playTone(note.lane);
+            keyButtons[note.lane].classList.add('pressed');
+            window.setTimeout(()=>keyButtons[note.lane].classList.remove('pressed'),105);
+            effects.push({lane:note.lane,createdAt:performance.now()});
+            setNextNote();
+          }
           if (!practiceMode && !note.hit && !note.missed && elapsed > note.time + .18) {
             note.missed = true;
             missCount++;
@@ -2112,6 +2141,7 @@
 
       function hit(lane) {
         if (state !== "playing") return;
+        if (autoMode) return;
         // Touch events can arrive before the next animation frame on a busy phone.
         // Establish the wait before judging input, even when the note is overdue.
         if (practiceMode) update();
@@ -2524,6 +2554,8 @@
         isTestPlay = false;
         pausedAt = 0;
         state = "free";
+        autoMode = false;
+        app.classList.remove('is-auto');
         trackUsage('free_start');
         refreshFreeRecordingControls();
         updateKeyLabels();
@@ -2565,14 +2597,16 @@
           state = "playing";
           app.classList.add("is-playing");
           resizeCanvas();
-          document.getElementById("gameStatus").textContent = isTutorial ? "チュートリアル" : isTestPlay ? "おためし演奏" : practiceMode ? "練習モード" : "演奏中";
+          document.getElementById("gameStatus").textContent = autoMode ? "オート演奏（採点なし）" : isTutorial ? "チュートリアル" : isTestPlay ? "おためし演奏" : practiceMode ? "練習モード" : "演奏中";
           overlay.classList.add("hidden");
           return;
         }
         if (audioContext && audioContext.state === "suspended") audioContext.resume();
         chart = charts[document.getElementById("songSelect").value];
         if (isTutorial) chart = parseCreatorChart("チュートリアル用", 60, "0,C4\n2,D4\n4,E4\n6,F4\n8,G4\n12,C4\n12,E4\n12,G4\n16,F4\n16,A4\n16,C5\n20,C4\n20,C5", "C", 4);
-        practiceMode = isTutorial || practiceModeInput.checked;
+        autoMode = !isTutorial && document.getElementById('autoMode').checked;
+        app.classList.toggle('is-auto',autoMode);
+        practiceMode = isTutorial || (!autoMode && practiceModeInput.checked);
         const startBeat = isTutorial ? 0 : practiceMode ? getStartBeat(practiceStartBeatInput, chart) : 0;
         if (startBeat === null) return;
         runTravelTime = travelTime * 100 / settings.noteSpeed;
@@ -2580,7 +2614,8 @@
         preparePlayCountIn(chart);
         activeNotes = createActiveNotes(chart, startBeat);
         activeTimingLines = createActiveTimingLines(chart, startBeat);
-        beginUsageRun(isTutorial ? 'tutorial' : practiceMode ? 'practice' : 'normal');
+        if (autoMode) usageRun = null;
+        else beginUsageRun(isTutorial ? 'tutorial' : practiceMode ? 'practice' : 'normal');
         practiceHoldAt = null;
         practiceNote = null;
         selectionControls.forEach((control) => { control.disabled = true; });
@@ -2595,7 +2630,7 @@
         app.classList.add("is-playing");
         updateKeyLabels();
         resizeCanvas();
-        document.getElementById("gameStatus").textContent = isTutorial ? "チュートリアル" : practiceMode ? "練習モード" : "演奏中";
+        document.getElementById("gameStatus").textContent = autoMode ? "オート演奏（採点なし）" : isTutorial ? "チュートリアル" : practiceMode ? "練習モード" : "演奏中";
         document.getElementById("tutorialGuide").hidden = !isTutorial;
         document.getElementById("overlayTitle").textContent = "演奏モードを選択";
         document.getElementById("overlayCopy").innerHTML = "曲を選んで「曲を演奏」を押してください。<br>譜面なしで弾く場合は「フリー演奏」。";
@@ -2618,7 +2653,9 @@
         if (startBeat === null) return;
         stopPreview();
         chart = { bpm: testChart.bpm, steps: testChart.steps, directLanes: true, keySignature: testChart.keySignature, meter: testChart.meter };
+        autoMode = false;
         practiceMode = practiceModeInput.checked;
+        app.classList.remove('is-auto');
         runTravelTime = travelTime * 100 / settings.noteSpeed;
         runTempoScale = practiceMode ? 100 / settings.practiceTempo : 1;
         preparePlayCountIn(chart);
@@ -2733,6 +2770,12 @@
       }
 
       function finishGame() {
+        if (autoMode) {
+          state = 'paused';stopGame();
+          document.getElementById('overlayTitle').textContent='お手本の演奏が終わりました';
+          document.getElementById('overlayCopy').textContent='オートを外すと自分で演奏できます。';
+          return;
+        }
         endUsageRun('game_finish');
         document.getElementById("freePlayButton").hidden = false;
         if (isTutorial) {
